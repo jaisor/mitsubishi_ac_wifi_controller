@@ -14,9 +14,7 @@
 #include <vector>
 
 #include "BaseManager.h"
-#include "BaseMessage.h"
 #include "wifi/SensorProvider.h"
-#include "RF24MessageQueue.h"
 
 typedef enum {
   WF_CONNECTING = 0,
@@ -27,7 +25,6 @@ class CWifiManager: public CBaseManager {
 
 private:
   ISensorProvider *sensorProvider;
-  IMessageQueue *messageQueue;
   
   bool rebootNeeded;
   uint8_t wifiRetries;
@@ -65,7 +62,7 @@ private:
   const String getTopicForMessageId(uint8_t msgId);
 
 public:
-	CWifiManager(ISensorProvider *sensorProvider, IMessageQueue *messageQueue);
+	CWifiManager(ISensorProvider *sensorProvider);
   virtual void loop();
 
   virtual const bool isRebootNeeded() { return rebootNeeded; }

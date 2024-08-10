@@ -14,9 +14,9 @@
 #define FACTORY_RESET_CLEAR_TIMER_MS 2000   // Clear factory reset counter when elapsed, considered smooth boot
 
 #if defined(ESP32)
-  #define DEVICE_NAME "ESP32RFGW"
+  #define DEVICE_NAME "ESP32MHVAC"
 #elif defined(ESP8266)
-  #define DEVICE_NAME "ESP8266RFGW"
+  #define DEVICE_NAME "ESP8266MHVAC"
 #endif
 
 #ifdef WIFI
@@ -72,6 +72,12 @@
   #endif
 #endif
 
+#define HVAC_CTRL
+#ifdef HVAC_CTRL
+  #define TEMP_UNIT_CELSIUS     0
+  #define TEMP_UNIT_FAHRENHEIT  1
+#endif
+
 #define INTERNAL_LED_PIN LED_BUILTIN
 
 struct configuration_t {
@@ -91,19 +97,11 @@ struct configuration_t {
     char mqttTopic[128];
   #endif
 
-  #ifdef RADIO_RF24
-    uint8_t rf24_channel;
-    uint8_t rf24_data_rate;
-    uint8_t rf24_pa_level;
-    char rf24_pipe_suffix[5];
-    char rf24_pipe_mqttTopic[6][128];
-  #endif
-
   char name[128];
   #ifdef BATTERY_SENSOR
     float battVoltsDivider;
   #endif
-  #ifdef TEMP_SENSOR
+  #if defined(TEMP_SENSOR) || defined(HVAC_CTRL)
     uint8_t tempUnit;
   #endif
 

@@ -9,11 +9,7 @@
 #include <ElegantOTA.h>
 #include <StreamUtils.h>
 #include "Configuration.h"
-#ifdef RADIO_RF24
-  #include <RF24.h>
-#endif
 #include "wifi/WifiManager.h"
-#include "RF24Message.h"
 
 #define MAX_CONNECT_TIMEOUT_MS 15000 // 10 seconds to connect before creating its own AP
 #define POST_UPDATE_INTERVAL 300000 // Every 5 min
@@ -105,11 +101,13 @@ const String htmlDeviceConfigs = FPSTR("<hr><h2>Configs</h2>\
 const String htmlRF24MQTTTopicRow = FPSTR("<label for='ssid'>%i pipe MQTT topic:</label><br>\
     <input type='text' id='ssid' name='ssid'><br>");
 
-CWifiManager::CWifiManager(ISensorProvider *sensorProvider, IMessageQueue *messageQueue)
-:sensorProvider(sensorProvider), messageQueue(messageQueue), rebootNeeded(false), wifiRetries(0) {  
+CWifiManager::CWifiManager(ISensorProvider *sensorProvider)
+:sensorProvider(sensorProvider), rebootNeeded(false), wifiRetries(0) {  
 
   sensorJson["gw_name"] = configuration.name;
+  #ifdef BATTERY_SENSOR
   sensorJson["battVoltsDivider"] = configuration.battVoltsDivider;
+  #endif
 
   strcpy(SSID, configuration.wifiSsid);
   server = new AsyncWebServer(WEB_SERVER_PORT);
@@ -335,19 +333,11 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     mqttTopicPipes += String(c);
   }
 
-  #ifdef RADIO_RF24
-  response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
-    configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-    configuration.battVoltsDivider,
-    configuration.rf24_channel, rfDataRate, rfPALevel, configuration.rf24_pipe_suffix, mqttTopicPipes.c_str()
-  );
-  #else
   response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
     configuration.battVoltsDivider,
     -1, rfDataRate, rfPALevel, "", mqttTopicPipes.c_str()
   );
-  #endif
 
   printHTMLBottom(response);
   request->send(response);
@@ -402,35 +392,16 @@ void CWifiManager::handleConfig(AsyncWebServerRequest *request) {
   mqttTopic.toCharArray(configuration.mqttTopic, sizeof(configuration.mqttTopic));
   Log.infoln("MQTT Topic: %s", mqttTopic);
 
+#ifdef BATTERY_SENSOR
   float battVoltsDivider = atof(request->arg("battVoltsDivider").c_str());
   configuration.battVoltsDivider = battVoltsDivider;
   Log.infoln("battVoltsDivider: %D", battVoltsDivider);
+#endif
 
+#ifdef TEMP_SENSOR
   uint16_t tempUnit = atoi(request->arg("tempUnit").c_str());
   configuration.tempUnit = tempUnit;
   Log.infoln("Temperature unit: %u", tempUnit);
-
-#ifdef RADIO_RF24
-  uint8_t rf24_channel = atoi(request->arg("rf24_channel").c_str());
-  configuration.rf24_channel = rf24_channel;
-  Log.infoln("RF24 Channel: %u", rf24_channel);
-
-  uint8_t rf24_data_rate = atoi(request->arg("rf24_data_rate").c_str());
-  configuration.rf24_data_rate = rf24_data_rate;
-  Log.infoln("RF24 Data Rate: %u", rf24_data_rate);
-
-  uint8_t rf24_pa_level = atoi(request->arg("rf24_pa_level").c_str());
-  configuration.rf24_pa_level = rf24_pa_level;
-  Log.infoln("RF24 PA Level: %u", rf24_pa_level);
-
-  String rf24_pipe_suffix = request->arg("rf24_pipe_suffix");
-  rf24_pipe_suffix.toCharArray(configuration.rf24_pipe_suffix, sizeof(configuration.rf24_pipe_suffix));
-  Log.infoln("RF24 Pipe Suffix: %s", rf24_pipe_suffix);
-
-  for (int i=0; i<6; i++) {
-    String r = request->arg("pipe_" + String(i) + "_mqttTopic");
-    r.toCharArray(configuration.rf24_pipe_mqttTopic[i], sizeof(configuration.rf24_pipe_mqttTopic[i]));
-  }
 #endif
 
   EEPROM_saveConfig();

@@ -42,11 +42,10 @@ void setup() {
   EEPROM_loadConfig();
 
   device = new CDevice();
-  rf24Manager = new CRF24Manager();
   wifiManager = new CWifiManager(device);
 
   if (wifiManager->isError()) {
-    Log.errorln("wifiManager->isError()=%i", rf24Manager->isError(), wifiManager->isError());
+    Log.errorln("wifiManager->isError()=%i", wifiManager->isError());
     while(true) {
       intLEDBlink(250);
       delay(250);
