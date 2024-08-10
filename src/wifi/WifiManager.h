@@ -38,9 +38,8 @@ private:
   AsyncWebServer* server;
   PubSubClient mqtt;
 
-  StaticJsonDocument<2048> sensorJson;
-  StaticJsonDocument<2048> configJson;
-  StaticJsonDocument<2048> rfJson;
+  JsonDocument sensorJson;
+  JsonDocument configJson;
 
   void connect();
   void listen();
@@ -54,12 +53,10 @@ private:
   void printHTMLBottom(Print *p);
 
   void postSensorUpdate();
-  void processQueue();
   bool isApMode();
 
   void mqttCallback(char *topic, uint8_t *payload, unsigned int);
   bool ensureMQTTConnected();
-  const String getTopicForMessageId(uint8_t msgId);
 
 public:
 	CWifiManager(ISensorProvider *sensorProvider);

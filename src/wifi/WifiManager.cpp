@@ -6,7 +6,7 @@
 #include <WiFiClient.h>
 #include <Time.h>
 #include <ezTime.h>
-#include <ElegantOTA.h>
+//#include <ElegantOTA.h>
 #include <StreamUtils.h>
 #include "Configuration.h"
 #include "wifi/WifiManager.h"
@@ -47,7 +47,6 @@ const String htmlBottom = FPSTR("<p><b>%s</b><br>\
   WiFi signal strength: <b>%i%%</b><br/>\
   Temperature: <b>%0.2f %s</b><br/>\
   Battery: <b>%0.2fV</b><br/>\
-  RF messages in queue: <b>%i</b><br/>\
   MQTT: <b>%s</b>\
   </p></body>\
 </html>");
@@ -162,7 +161,7 @@ void CWifiManager::listen() {
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
   
-  sensorJson["gw_ip"] = WiFi.localIP();
+  sensorJson["ip"] = WiFi.localIP().toString();
 
   // NTP
   Log.infoln("Configuring time from %s at %i (%i)", configuration.ntpServer, configuration.gmtOffset_sec, configuration.daylightOffset_sec);
@@ -173,7 +172,7 @@ void CWifiManager::listen() {
   }
 
   // OTA
-  ElegantOTA.begin(server);
+  //ElegantOTA.begin(server);
 
   // MQTT
   mqtt.setServer(configuration.mqttServer, configuration.mqttPort);
@@ -201,7 +200,7 @@ void CWifiManager::listen() {
 
 void CWifiManager::loop() {
 
-  ElegantOTA.loop();
+  //ElegantOTA.loop();
 
   if (rebootNeeded && millis() - tMillis > 300) {
     Log.noticeln("Rebooting...");
@@ -223,8 +222,7 @@ void CWifiManager::loop() {
     }
 
     mqtt.loop();
-    processQueue();
-
+    
     if (!isApMode() && strlen(configuration.mqttServer) && strlen(configuration.mqttTopic) && mqtt.connected()) {
       if (millis() - tMillis > POST_UPDATE_INTERVAL) {
         tMillis = millis();
@@ -333,10 +331,15 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     mqttTopicPipes += String(c);
   }
 
+#ifdef BATTERY_SENSOR
+  float bvd = configuration.battVoltsDivider;
+#else
+  float bvd = 0;
+#endif
+
   response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-    configuration.battVoltsDivider,
-    -1, rfDataRate, rfPALevel, "", mqttTopicPipes.c_str()
+    bvd, -1, rfDataRate, rfPALevel, "", mqttTopicPipes.c_str()
   );
 
   printHTMLBottom(response);
@@ -565,44 +568,7 @@ void CWifiManager::printHTMLBottom(Print *p) {
   p->printf(htmlBottom.c_str(), DEVICE_NAME, hr, min % 60, sec % 60, 
     dBmtoPercentage(WiFi.RSSI()),
     configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
-    sensorProvider->getBatteryVoltage(NULL),
-    messageQueue->getQueue()->size(), mqttStat);
-}
-
-void CWifiManager::processQueue() {
-  
-  std::queue<CBaseMessage*>* q = messageQueue->getQueue();
-  if (!q->empty() && !ensureMQTTConnected()) {
-    Log.errorln("Unable to post queue messages due to MQTT connection issues");
-    return;
-  }
-
-  while(!q->empty()) {
-    CBaseMessage *msg = q->front();
-    #ifdef RADIO_RF24
-    if (!strlen(configuration.rf24_pipe_mqttTopic[msg->getPipe()])) {
-      Log.warning(F("Message received on pipe %i with blank MQTT topic"), msg->getPipe());
-    } else {
-      // sensor Json
-      char topic[255];
-      sprintf_P(topic, "%s/%s/json", configuration.rf24_pipe_mqttTopic[msg->getPipe()], getTopicForMessageId(msg->getId()).c_str());
-      
-      msg->populateJson(rfJson);
-      
-      mqtt.beginPublish(topic, measureJson(rfJson), false);
-      BufferingPrint bufferedClient(mqtt, 32);
-      serializeJson(rfJson, bufferedClient);
-      bufferedClient.flush();
-      mqtt.endPublish();
-
-      String jsonStr;
-      serializeJson(rfJson, jsonStr);
-      Log.noticeln("Sent '%s' json to MQTT topic '%s'", jsonStr.c_str(), topic);
-    }
-    #endif
-    q->pop();
-    delete msg;
-  }
+    sensorProvider->getBatteryVoltage(NULL), mqttStat);
 }
 
 bool CWifiManager::ensureMQTTConnected() {
@@ -625,20 +591,4 @@ bool CWifiManager::ensureMQTTConnected() {
     }
   }
   return true;
-}
-
-const String MSG_UVTHP_ID_STR = FPSTR("uvthp");
-const String MSG_VED_INV_ID_STR = FPSTR("ved_inv");
-const String MSG_VED_MPPT_ID_STR = FPSTR("ved_mppt");
-const String MSG_VED_BATT_ID_STR = FPSTR("ved_batt");
-const String MSG_VED_BATT_SUP_ID_STR = FPSTR("ved_batt_sup");
-const String CWifiManager::getTopicForMessageId(uint8_t msgId) {
-  switch (msgId) {
-    case MSG_UVTHP_ID: return MSG_UVTHP_ID_STR;
-    case MSG_VED_INV_ID: return MSG_VED_INV_ID_STR;
-    case MSG_VED_MPPT_ID: return MSG_VED_MPPT_ID_STR;
-    case MSG_VED_BATT_ID: return MSG_VED_BATT_ID_STR;
-    case MSG_VED_BATT_SUP_ID: return MSG_VED_BATT_SUP_ID_STR;
-    default: return FPSTR("unknown");
-  }
 }
