@@ -22,7 +22,8 @@ bool smoothBoot;
 unsigned long tsMillisBooted;
 
 void setup() {
-  Serial.begin(19200);  while (!Serial); delay(200);
+  Serial.begin(115200);  while (!Serial); delay(200);
+  delay(100);
   randomSeed(analogRead(0));
 
   Log.begin(LOG_LEVEL, &Serial);
