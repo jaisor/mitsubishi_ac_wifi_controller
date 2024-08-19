@@ -6,12 +6,10 @@
 #include <WiFiClient.h>
 #include <Time.h>
 #include <ezTime.h>
-//#include <ElegantOTA.h>
-#include <ArduinoOTA.h>
+#include <ElegantOTA.h>
 #include <StreamUtils.h>
 #include "Configuration.h"
 #include "wifi/WifiManager.h"
-#include "AsyncTCP.h"
 
 #define MAX_CONNECT_TIMEOUT_MS 15000 // 10 seconds to connect before creating its own AP
 #define POST_UPDATE_INTERVAL 300000 // Every 5 min
@@ -110,26 +108,6 @@ CWifiManager::CWifiManager(ISensorProvider *sensorProvider)
   sensorJson["battVoltsDivider"] = configuration.battVoltsDivider;
   #endif
 
-  //
-  ArduinoOTA.onStart([]() {
-    Log.infoln("OTA: Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Log.infoln("OTA: End");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Log.infoln("OTA: Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Log.errorln("OTA: Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Log.errorln("OTA: Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Log.errorln("OTA: Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Log.errorln("OTA: Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Log.errorln("OTA: Receive Failed");
-    else if (error == OTA_END_ERROR) Log.errorln("OTA: End Failed");
-  });
-  //
-
   strcpy(SSID, configuration.wifiSsid);
   server = new AsyncWebServer(WEB_SERVER_PORT);
   mqtt.setClient(espClient);
@@ -181,13 +159,6 @@ void CWifiManager::listen() {
   server->on("/config", HTTP_POST, std::bind(&CWifiManager::handleConfig, this, std::placeholders::_1));
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
 
-  //server->on("/update", HTTP_GET, std::bind(&CWifiManager::processUpdate, this, std::placeholders::_1));
-  /*
-  server->on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {},
-        [](AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
-        { ProcessUpdate(request, filename, index, data, len, final); });
-  */
-
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
   
@@ -202,9 +173,7 @@ void CWifiManager::listen() {
   }
 
   // OTA
-  //ElegantOTA.begin(server);
-  Log.infoln("ArduinoOTA.begin()");
-  ArduinoOTA.begin();
+  ElegantOTA.begin(server);
 
   // MQTT
   mqtt.setServer(configuration.mqttServer, configuration.mqttPort);
@@ -232,7 +201,7 @@ void CWifiManager::listen() {
 
 void CWifiManager::loop() {
 
-  //ElegantOTA.loop();
+  ElegantOTA.loop();
 
   if (rebootNeeded && millis() - tMillis > 300) {
     Log.noticeln("Rebooting...");
@@ -623,7 +592,4 @@ bool CWifiManager::ensureMQTTConnected() {
     }
   }
   return true;
-}
-
-void CWifiManager::processUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final) {
 }

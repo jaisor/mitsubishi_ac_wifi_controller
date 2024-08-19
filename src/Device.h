@@ -17,6 +17,8 @@
   #include <DHT_U.h>
 #endif
 
+#include <HeatPump.h>
+
 #define STALE_READING_AGE_MS 10000 // 10 sec
 
 class CDevice: public ISensorProvider {
@@ -47,6 +49,8 @@ private:
   unsigned long tMillisTemp;
   unsigned long tLastReading;
   bool sensorReady;
+
+  HeatPump hp;
   
   float _temperature;
 #ifdef TEMP_SENSOR_DS18B20
