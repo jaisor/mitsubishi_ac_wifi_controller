@@ -70,19 +70,27 @@ CDevice::CDevice() {
 #endif
 
 #if defined(ESP32)
-  hp.connect(&Serial0);
+  bool hpConnected = hp.connect(&Serial0);
 #elif defined(ESP8266)
-  hp.connect(&Serial);
+  bool hpConnected = hp.connect(&Serial1);
 #endif
   
+  if (hpConnected) {
+    Log.infoln("Heat pump UART connected");
+  } else {
+    Log.errorln("Failed to connect heat pump UART");
+  }
+  
+  /*
   hp.setSettings({ //set some default settings
-    "ON",  /* ON/OFF */
-    "FAN", /* HEAT/COOL/FAN/DRY/AUTO */
-    26,    /* Between 16 and 31 */
-    "4",   /* Fan speed: 1-4, AUTO, or QUIET */
-    "3",   /* Air direction (vertical): 1-5, SWING, or AUTO */
-    "|"    /* Air direction (horizontal): <<, <, |, >, >>, <>, or SWING */
+    "ON",  // ON/OFF 
+    "FAN", // HEAT/COOL/FAN/DRY/AUTO 
+    26,    // Between 16 and 31 
+    "4",   // Fan speed: 1-4, AUTO, or QUIET 
+    "3",   // Air direction (vertical): 1-5, SWING, or AUTO 
+    "|"    // Air direction (horizontal): <<, <, |, >, >>, <>, or SWING 
   });
+  */
 
   Log.infoln(F("Device initialized"));
 }
