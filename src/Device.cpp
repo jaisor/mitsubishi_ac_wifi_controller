@@ -4,7 +4,26 @@
 
 #include "Device.h"
 
+#ifdef TEMP_SENSOR_DS18B20
 #include <Wire.h>
+#endif
+
+#if defined(ESP8266)
+  #include <SoftwareSerial.h> // ESP8266 uses software UART because of USB conflict with its single full hardware UART
+#endif
+
+#if defined(ESP32)
+  #define HP_RX GPIO_NUM_16
+  #define HP_TX GPIO_NUM_17
+#elif defined(ESP8266)
+  #define HP_RX -1 // default
+  #define HP_TX -1 // default
+#elif defined(SEEED_XIAO_M0)
+  #define HP_RX D7
+  #define HP_TX D6
+#else
+  #error Unsupported platform
+#endif
 
 CDevice::CDevice() {
 
@@ -69,10 +88,13 @@ CDevice::CDevice() {
   pinMode(BATTERY_SENSOR_ADC_PIN, INPUT);
 #endif
 
+  bool hpConnected = false;
 #if defined(ESP32)
-  bool hpConnected = hp.connect(&Serial0);
+  hpConnected = hp.connect(&Serial2, HP_RX, HP_TX);
 #elif defined(ESP8266)
-  bool hpConnected = hp.connect(&Serial1);
+  hpConnected = hp.connect(&Serial);
+#elif defined(SEEED_XIAO_M0)
+  hpConnected = hp.connect(&Serial1, HP_RX, HP_TX);
 #endif
   
   if (hpConnected) {
@@ -80,7 +102,9 @@ CDevice::CDevice() {
   } else {
     Log.errorln("Failed to connect heat pump UART");
   }
-  
+
+  hpSettings["connected"] = hpConnected;
+
   /*
   hp.setSettings({ //set some default settings
     "ON",  // ON/OFF 
@@ -202,3 +226,26 @@ float CDevice::getBatteryVoltage(bool *current) {
 }
 #endif
 
+JsonDocument& CDevice::getACSettings() {
+  hpSettings["utime"] = millis();
+
+  hp.sync();
+  heatpumpSettings hps = hp.getSettings();
+
+  hpSettings["connected"] = hps.connected;
+  hpSettings["power"] = hps.power;
+  hpSettings["mode"] = hps.mode;
+  hpSettings["temperature"] = hps.temperature;
+  hpSettings["fan"] = hps.fan;
+  hpSettings["vane"] = hps.vane;
+  hpSettings["wideVane"] = hps.wideVane;
+
+  if (hps.connected) {
+    heatpumpStatus hpst = hp.getStatus();
+    hpSettings["roomTemperature"] = hpst.roomTemperature;
+    hpSettings["operating"] = hpst.operating;
+    hpSettings["compressorFrequency"] = hpst.compressorFrequency;
+  }
+
+  return hpSettings;
+}

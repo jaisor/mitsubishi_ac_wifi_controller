@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Configuration.h"
+#include <ArduinoJson.h>
 
 class ISensorProvider {
 public:
@@ -11,4 +12,5 @@ public:
   virtual uint32_t getDeviceId() { return CONFIG_getDeviceId(); };
   virtual uint32_t getUptime() { return CONFIG_getUpTime(); };
   virtual bool isSensorReady() { return false; };
+  virtual JsonDocument& getACSettings();
 };

@@ -43,6 +43,8 @@ public:
   virtual float getBatteryVoltage(bool *current);
 #endif
 
+  virtual JsonDocument& getACSettings();
+
 private:
   unsigned long tMillisUp;
 
@@ -51,6 +53,7 @@ private:
   bool sensorReady;
 
   HeatPump hp;
+  JsonDocument hpSettings;
   
   float _temperature;
 #ifdef TEMP_SENSOR_DS18B20

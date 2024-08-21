@@ -5,6 +5,19 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "regex": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "thread": "cpp",
+        "typeinfo": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "new": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "streambuf": "cpp"
     }
 }

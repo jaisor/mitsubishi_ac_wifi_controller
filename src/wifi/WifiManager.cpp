@@ -79,20 +79,9 @@ const String htmlDeviceConfigs = FPSTR("<hr><h2>Configs</h2>\
     <label for='battVoltsDivider'>Battery volt measurement divider:</label><br>\
     <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'><br>\
     <br>\
-    <h3>Radio Settings</h3>\
-    <label for='rf24_channel'>Channel:</label><br>\
-    <input type='text' id='rf24_channel' name='rf24_channel' value='%u' size='3' maxlength='3'> <small>(0-125)</small><br>\
-    <label for='rf24_data_rate'>Data rate:</label><br>\
-    <select name='rf24_data_rate' id='rf24_data_rate'>\
-    %s\
-    </select><br>\
-    <label for='rf24_pa_level'>Power amplifier level:</label><br>\
-    <select name='rf24_pa_level' id='rf24_pa_level'>\
-    %s\
-    </select><br>\
-    <label for='rf24_pipe_suffix'>Pipe name suffix:</label><br>\
-    <input type='text' id='rf24_pipe_suffix' name='rf24_pipe_suffix' value='%s' minlength='4' maxlength='4' size='4'><br>\
-    %s\
+    <h3>AC / HVAC / Heat Pump</h3>\
+    <label for='acSettings'>AC Settings:</label><br>\
+    <textarea type='text' id='acSettings' name='acSettings' rows='10' cols='40'>%s</textarea><br>\
     <br>\
     <input type='submit' value='Set...'>\
   </form>");
@@ -282,6 +271,7 @@ void CWifiManager::loop() {
 void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
 
   Log.infoln("handleRoot");
+  intLEDOn();
 
   AsyncResponseStream *response = request->beginResponseStream("text/html");
   printHTMLTop(response);
@@ -298,53 +288,25 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     configuration.tempUnit == TEMP_UNIT_CELSIUS ? "selected" : "", 
     configuration.tempUnit == TEMP_UNIT_FAHRENHEIT ? "selected" : "");
 
-  char rfDataRate[130] = "";
-  #ifdef RADIO_RF24
-  snprintf_P(rfDataRate, 130, PSTR("<option %s value='0'>1MBPS</option>\
-    <option %s value='1'>2MBPS</option>\
-    <option %s value='2'>250KBPS</option>"), 
-    configuration.rf24_data_rate == RF24_1MBPS ? "selected" : "", 
-    configuration.rf24_data_rate == RF24_2MBPS ? "selected" : "", 
-    configuration.rf24_data_rate == RF24_250KBPS ? "selected" : "");
-  #endif
-
-  char rfPALevel[210] = "";
-  #ifdef RADIO_RF24
-  snprintf_P(rfPALevel, 210, PSTR("<option %s value='0'>Min</option>\
-    <option %s value='1'>Low</option>\
-    <option %s value='2'>High</option>\
-    <option %s value='3'>Max</option>"), 
-    configuration.rf24_pa_level == RF24_PA_MIN ? "selected" : "", 
-    configuration.rf24_pa_level == RF24_PA_LOW ? "selected" : "", 
-    configuration.rf24_pa_level == RF24_PA_HIGH ? "selected" : "",
-    configuration.rf24_pa_level == RF24_PA_MAX ? "selected" : "");
-  #endif
-
-  String mqttTopicPipes = "";
-  for (int i=0; i<6; i++) {
-    char c[255] = "";
-    #ifdef RADIO_RF24
-    snprintf_P(c, 255, PSTR("<label for='pipe_%i_mqttTopic'>Pipe %i MQTT topic:</label><br>\
-      <input type='text' id='pipe_%i_mqttTopic' name='pipe_%i_mqttTopic' value='%s'><br>"),
-      i, i+1, i, i, configuration.rf24_pipe_mqttTopic[i]
-      );
-    #endif
-    mqttTopicPipes += String(c);
-  }
-
 #ifdef BATTERY_SENSOR
   float bvd = configuration.battVoltsDivider;
 #else
   float bvd = 0;
 #endif
 
+  String jsonStr;
+  serializeJson(sensorProvider->getACSettings(), jsonStr);
+  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+
   response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-    bvd, -1, rfDataRate, rfPALevel, "", mqttTopicPipes.c_str()
+    bvd, jsonStr.c_str()
   );
 
   printHTMLBottom(response);
   request->send(response);
+
+  intLEDOff();
 }
 
 void CWifiManager::handleConnect(AsyncWebServerRequest *request) {
@@ -441,6 +403,8 @@ void CWifiManager::postSensorUpdate() {
     return;
   }
 
+  intLEDOn();
+
   char topic[255];
   float v; int iv;
 
@@ -499,6 +463,8 @@ void CWifiManager::postSensorUpdate() {
   sensorJson["rf_msq_queue_size"] = messageQueue->getQueue()->size();
 #endif
 
+  sensorJson["ac"] = sensorProvider->getACSettings();
+
   // sensor Json
   sprintf_P(topic, "%s/json", configuration.mqttTopic);
   mqtt.beginPublish(topic, measureJson(sensorJson), false);
@@ -510,6 +476,8 @@ void CWifiManager::postSensorUpdate() {
   String jsonStr;
   serializeJson(sensorJson, jsonStr);
   Log.noticeln("Sent '%s' json to MQTT topic '%s'", jsonStr.c_str(), topic);
+
+  intLEDOff();
 }
 
 bool CWifiManager::isApMode() { 

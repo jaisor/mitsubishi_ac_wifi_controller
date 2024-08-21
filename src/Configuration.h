@@ -4,7 +4,10 @@
 #include <functional>
 #include <ArduinoLog.h>
 
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define DISABLE_LOGGING
+#ifndef DISABLE_LOGGING
+  #define LOG_LEVEL LOG_LEVEL_VERBOSE
+#endif
 
 #define WIFI    // 2.4Ghz wifi access point
 

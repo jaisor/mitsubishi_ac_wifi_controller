@@ -22,15 +22,17 @@ bool smoothBoot;
 unsigned long tsMillisBooted;
 
 void setup() {
-  Serial.begin(115200);  while (!Serial); delay(200);
-  delay(100);
+
   randomSeed(analogRead(0));
-
-  Log.begin(LOG_LEVEL, &Serial);
-  Log.noticeln("Initializing...");  
-
+  
   pinMode(INTERNAL_LED_PIN, OUTPUT);
   intLEDOn();
+
+  #ifndef DISABLE_LOGGING
+  Serial.begin(19200); while (!Serial); delay(100);
+  Log.begin(LOG_LEVEL, &Serial);
+  Log.infoln(F("Initializing..."));
+  #endif
 
   if (EEPROM_initAndCheckFactoryReset() >= 3) {
     Log.warningln("Factory reset conditions met!");
@@ -41,6 +43,8 @@ void setup() {
   smoothBoot = false;
 
   EEPROM_loadConfig();
+
+  Log.infoln("Configuration loaded");
 
   device = new CDevice();
   wifiManager = new CWifiManager(device);
@@ -54,6 +58,7 @@ void setup() {
   }
 
   Log.infoln("Initialized");
+  intLEDOff();
 }
 
 void loop() {
