@@ -25,6 +25,22 @@
   #error Unsupported platform
 #endif
 
+unsigned long tsHPSettingsUpdated = 0;
+unsigned long tsHPStatusUpdated = 0;
+heatpumpSettings hpSettings;
+heatpumpStatus hpStatus;
+HeatPump hp;
+
+void hpSettingsChanged() {
+  hpSettings = hp.getSettings();
+  tsHPSettingsUpdated = millis();
+}
+
+void hpStatusChanged(heatpumpStatus currentStatus) {
+  hpStatus = currentStatus;
+  tsHPStatusUpdated = millis();
+}
+
 CDevice::CDevice() {
 
   tMillisUp = millis();
@@ -89,10 +105,16 @@ CDevice::CDevice() {
 #endif
 
   bool hpConnected = false;
+  hp.enableExternalUpdate();
+  hp.setSettingsChangedCallback(hpSettingsChanged);
+  hp.setStatusChangedCallback(hpStatusChanged);
+
 #if defined(ESP32)
   hpConnected = hp.connect(&Serial2, HP_RX, HP_TX);
 #elif defined(ESP8266)
-  hpConnected = hp.connect(&Serial);
+  #ifdef DISABLE_LOGGING
+    hpConnected = hp.connect(&Serial);
+  #endif
 #elif defined(SEEED_XIAO_M0)
   hpConnected = hp.connect(&Serial1, HP_RX, HP_TX);
 #endif
@@ -103,7 +125,7 @@ CDevice::CDevice() {
     Log.errorln("Failed to connect heat pump UART");
   }
 
-  hpSettings["connected"] = hpConnected;
+  jsonHPSettings["connected"] = hpConnected;
 
   /*
   hp.setSettings({ //set some default settings
@@ -187,6 +209,10 @@ void CDevice::loop() {
     #endif
   }
 
+  #if !defined(ESP8266) || (defined(ESP8266) && defined(DISABLE_LOGGING))
+  hp.sync();
+  #endif
+
 }
 
 #if defined(TEMP_SENSOR_DS18B20) || defined(TEMP_SENSOR_DHT) || defined(TEMP_SENSOR_BME280)
@@ -227,25 +253,41 @@ float CDevice::getBatteryVoltage(bool *current) {
 #endif
 
 JsonDocument& CDevice::getACSettings() {
-  hpSettings["utime"] = millis();
 
-  hp.sync();
-  heatpumpSettings hps = hp.getSettings();
+  jsonHPSettings["ts"] = millis();
+  jsonHPSettings["tsHPSettingsUpdated"] = tsHPSettingsUpdated;
+  jsonHPSettings["tsHPStatusUpdated"] = tsHPStatusUpdated;
 
-  hpSettings["connected"] = hps.connected;
-  hpSettings["power"] = hps.power;
-  hpSettings["mode"] = hps.mode;
-  hpSettings["temperature"] = hps.temperature;
-  hpSettings["fan"] = hps.fan;
-  hpSettings["vane"] = hps.vane;
-  hpSettings["wideVane"] = hps.wideVane;
-
-  if (hps.connected) {
-    heatpumpStatus hpst = hp.getStatus();
-    hpSettings["roomTemperature"] = hpst.roomTemperature;
-    hpSettings["operating"] = hpst.operating;
-    hpSettings["compressorFrequency"] = hpst.compressorFrequency;
+  if (tsHPSettingsUpdated > 0) {
+    jsonHPSettings["connected"] = hpSettings.connected;
+    jsonHPSettings["power"] = hpSettings.power;
+    jsonHPSettings["mode"] = hpSettings.mode;
+    jsonHPSettings["temperature"] = hpSettings.temperature;
+    jsonHPSettings["fan"] = hpSettings.fan;
+    jsonHPSettings["vane"] = hpSettings.vane;
+    jsonHPSettings["wideVane"] = hpSettings.wideVane;
   }
 
-  return hpSettings;
+  if (tsHPStatusUpdated > 0) {
+    jsonHPSettings["roomTemperature"] = hpStatus.roomTemperature;
+    jsonHPSettings["operating"] = hpStatus.operating;
+    jsonHPSettings["compressorFrequency"] = hpStatus.compressorFrequency;
+  }
+
+  #ifdef DEBUG_MOCK_HP
+    jsonHPSettings["tsHPSettingsUpdated"] = millis();
+    jsonHPSettings["tsHPStatusUpdated"] = millis();
+    jsonHPSettings["connected"] = true;
+    jsonHPSettings["power"] = "ON";
+    jsonHPSettings["mode"] = "COOL";
+    jsonHPSettings["temperature"] = 23.32;
+    jsonHPSettings["fan"] = "AUTO";
+    jsonHPSettings["vane"] = "AUTO";;
+    jsonHPSettings["wideVane"] = "|";
+    jsonHPSettings["roomTemperature"] = 32.23;
+    jsonHPSettings["operating"] = true;
+    jsonHPSettings["compressorFrequency"] = 0;
+  #endif
+
+  return jsonHPSettings;
 }

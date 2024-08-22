@@ -52,8 +52,7 @@ private:
   unsigned long tLastReading;
   bool sensorReady;
 
-  HeatPump hp;
-  JsonDocument hpSettings;
+  JsonDocument jsonHPSettings;
   
   float _temperature;
 #ifdef TEMP_SENSOR_DS18B20

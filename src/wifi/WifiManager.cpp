@@ -33,6 +33,7 @@ int dBmtoPercentage(int dBm) {
 
 const String htmlTop = FPSTR("<html>\
   <head>\
+  <meta charset='UTF-8'>\
   <title>%s</title>\
   <style>\
     body { background-color: #303030; font-family: 'Anaheim',sans-serif; Color: #d8d8d8; }\
@@ -79,15 +80,39 @@ const String htmlDeviceConfigs = FPSTR("<hr><h2>Configs</h2>\
     <label for='battVoltsDivider'>Battery volt measurement divider:</label><br>\
     <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'><br>\
     <br>\
-    <h3>AC / HVAC / Heat Pump</h3>\
-    <label for='acSettings'>AC Settings:</label><br>\
-    <textarea type='text' id='acSettings' name='acSettings' rows='10' cols='40'>%s</textarea><br>\
-    <br>\
     <input type='submit' value='Set...'>\
   </form>");
 
-const String htmlRF24MQTTTopicRow = FPSTR("<label for='ssid'>%i pipe MQTT topic:</label><br>\
-    <input type='text' id='ssid' name='ssid'><br>");
+const String htmlHeatPump = FPSTR("<hr><h2>Heat Pump / AC Settings %s</h2>\
+  %s\
+  <div>Room temperature: <b>%0.1f %s</b></div><br>\
+  <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>\
+    <label for='power'>Power:</label> \
+    <select name='power' id='power'>\
+    %s\
+    </select><br>\
+    <label for='mode'>Mode:</label> \
+    <select name='mode' id='mode'>\
+    %s\
+    </select><br>\
+    <label for='temperature'>Desired temperature:</label> \
+    <input type='text' id='temperature' name='temperature' size='4' value='%0.1f'>%s<br>\
+    <label for='fan'>Fan:</label> \
+    <select name='fan' id='fan'>\
+    %s\
+    </select><br>\
+    <label for='vane'>Vertical vane:</label> \
+    <select name='vane' id='vane'>\
+    %s\
+    </select><br>\
+    <label for='wideVane'>Horizontal vane:</label> \
+    <select name='wideVane' id='wideVane'>\
+    %s\
+    </select><br>\
+    <br>\
+    <pre style='font-family: monospace; font-size: 9px;'>%s</pre>\
+    <input type='submit' value='Set...'>\
+  </form>");
 
 CWifiManager::CWifiManager(ISensorProvider *sensorProvider)
 :sensorProvider(sensorProvider), rebootNeeded(false), wifiRetries(0) {  
@@ -282,6 +307,8 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     response->printf("<p>Connected to '%s'</p>", SSID);
   }
 
+  printHTMLHeatPump(response);
+
   char tempUnit[256];
   snprintf(tempUnit, 256, "<option %s value='0'>Celsius</option>\
     <option %s value='1'>Fahrenheit</option>", 
@@ -294,14 +321,9 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
   float bvd = 0;
 #endif
 
-  String jsonStr;
-  serializeJson(sensorProvider->getACSettings(), jsonStr);
-  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
-
   response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-    bvd, jsonStr.c_str()
-  );
+    bvd);
 
   printHTMLBottom(response);
   request->send(response);
@@ -538,6 +560,86 @@ void CWifiManager::printHTMLBottom(Print *p) {
     dBmtoPercentage(WiFi.RSSI()),
     configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
     sensorProvider->getBatteryVoltage(NULL), mqttStat);
+}
+
+void CWifiManager::printHTMLHeatPump(Print *p) {
+
+  JsonDocument ac = sensorProvider->getACSettings();
+  
+  String jsonStr;
+  serializeJson(ac, jsonStr);
+  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+
+  float rt = ac.containsKey("roomTemperature") ? ac["roomTemperature"] : 0;
+  float t = ac.containsKey("temperature") ? ac["temperature"] : 0;
+
+  char selectPower[512] = "";
+  if (ac.containsKey("power")) {
+    snprintf_P(selectPower, 512, PSTR("\
+      <option %s value='OFF'>OFF</option>\
+      <option %s value='ON'>ON</option>"
+      ), 
+      strcmp(ac["power"], "OFF") == 0 ? "selected" : "", 
+      strcmp(ac["power"], "ON") == 0 ? "selected" : ""
+    );
+  }
+
+  char selectMode[512] = "";
+  if (ac.containsKey("mode")) {
+    snprintf_P(selectMode, 512, PSTR("\
+      <option %s value='HEAT'>HEAT</option>\
+      <option %s value='DRY'>DRY</option>\
+      <option %s value='COOL'>COOL</option>\
+      <option %s value='FAN'>FAN</option>\
+      <option %s value='AUTO'>AUTO</option>\
+      "), 
+      strcmp(ac["mode"], "HEAT") == 0 ? "selected" : "", 
+      strcmp(ac["mode"], "DRY") == 0 ? "selected" : "",
+      strcmp(ac["mode"], "COOL") == 0 ? "selected" : "",
+      strcmp(ac["mode"], "FAN") == 0 ? "selected" : "",
+      strcmp(ac["mode"], "AUTO") == 0 ? "selected" : ""
+    );
+  }
+
+  char selectFan[512] = "";
+  if (ac.containsKey("fan")) {
+    snprintf_P(selectFan, 512, PSTR("\
+      <option %s value='AUTO'>AUTO</option>\
+      <option %s value='QUIET'>QUIET</option>\
+      <option %s value='1'>1</option>\
+      <option %s value='2'>2</option>\
+      <option %s value='3'>3</option>\
+      <option %s value='4'>4</option>\
+      <option %s value='5'>5</option>\
+      <option %s value='SWING'>SWING</option>\
+      "), 
+      strcmp(ac["fan"], "AUTO") == 0 ? "selected" : "", 
+      strcmp(ac["fan"], "QUIET") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "1") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "2") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "3") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "4") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "5") == 0 ? "selected" : "",
+      strcmp(ac["fan"], "SWING") == 0 ? "selected" : ""
+    );
+  }
+
+  // {"AUTO", "QUIET", "1", "2", "3", "4"};
+  // {"AUTO", "1", "2", "3", "4", "5", "SWING"};
+  // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
+
+  p->printf(htmlHeatPump.c_str(), 
+    ac.containsKey("connected") && ac["connected"] ? PSTR("✅") : PSTR("❌"),
+    ac.containsKey("operating") && ac["operating"] ? "<div style='color: green; font-weight: bold;'>OPERATING</div><br>" : "",
+    configuration.tempUnit == TEMP_UNIT_CELSIUS ? rt : rt * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
+    selectPower,
+    selectMode,
+    configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
+    selectFan, // fan
+    "", // vane
+    "", // wideVane
+    jsonStr.c_str()
+  );
 }
 
 bool CWifiManager::ensureMQTTConnected() {

@@ -51,6 +51,7 @@ private:
 
   void printHTMLTop(Print *p);
   void printHTMLBottom(Print *p);
+  void printHTMLHeatPump(Print *p);
 
   void postSensorUpdate();
   bool isApMode();
