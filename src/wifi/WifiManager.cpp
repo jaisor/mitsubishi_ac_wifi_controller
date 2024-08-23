@@ -341,6 +341,8 @@ void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
     if (len > 0) {
       memcpy_P(buffer, cssPico + index, len);
       dataLen -= len;
+    } else {
+      dataLen = strlen_P(cssPico);
     }
     return len;
   });
