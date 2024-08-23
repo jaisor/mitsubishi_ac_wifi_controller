@@ -226,6 +226,12 @@ float CDevice::getTemperature(bool *current) {
   }
   return _temperature;
 }
+#else
+float CDevice::getTemperature(bool *current) {
+  if (tsHPStatusUpdated > 0) {
+    return hpStatus.roomTemperature;
+  }
+}
 #endif
 
 #if defined(TEMP_SENSOR_DHT) || defined(TEMP_SENSOR_BME280)

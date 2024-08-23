@@ -24,18 +24,17 @@ const char htmlBottom[] PROGMEM = R"=====(
     </main>
     <footer class="container">
       <div class="grid">
-        <div>Uptime<br><b>%02d:%02d:%02d</b></div>
-        <div>WiFi signal strength<br><b>%i%%</b></div>
-        <div>Temperature<br><b>%0.2f %s</b></div>
-        <div>Battery<br><b>%0.2fV</b></div>
-        <div>MQTT<br><b>%s</b></div>
+        <div>⌛ <b>%02d:%02d:%02d</b></div>
+        <div>🛜 %s <b>%i%%</b></div>
+        <div>🌡️ <b>%0.2f°%s</b></div>
+        <div>MQTT <b>%s</b></div>
       </div>
     </footer>
   </body>
 </html>
 )=====";
 
-const String htmlWifiApConnectForm = FPSTR("<hr><h2>Connect to WiFi Access Point (AP)</h2>\
+const String htmlWifiApConnectForm = FPSTR("<h2>Connect to WiFi Access Point (AP)</h2>\
   <form method='POST' action='/connect' enctype='application/x-www-form-urlencoded'>\
     <label for='ssid'>SSID (AP Name):</label><br>\
     <input type='text' id='ssid' name='ssid'><br><br>\
@@ -44,7 +43,7 @@ const String htmlWifiApConnectForm = FPSTR("<hr><h2>Connect to WiFi Access Point
     <input type='submit' value='Connect...'>\
   </form>");
 
-const String htmlDeviceConfigs = FPSTR("<hr><h2>Configs</h2>\
+const String htmlDeviceConfigs = FPSTR("<h2>Configs</h2>\
   <form method='POST' action='/config' enctype='application/x-www-form-urlencoded'>\
     <label for='deviceName'>Device name:</label><br>\
     <input type='text' id='deviceName' name='deviceName' value='%s'><br>\
@@ -66,7 +65,7 @@ const String htmlDeviceConfigs = FPSTR("<hr><h2>Configs</h2>\
     <input type='submit' value='Set...'>\
   </form>");
 
-const String htmlHeatPump = FPSTR("<hr><h2>Heat Pump / AC Settings %s</h2>\
+const String htmlHeatPump = FPSTR("<h2>Heat Pump / AC Settings %s</h2>\
   %s\
   <div>Room temperature: <b>%0.1f %s</b></div><br>\
   <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>\

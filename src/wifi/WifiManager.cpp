@@ -224,8 +224,6 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
 
   if (isApMode()) {
     response->printf(htmlWifiApConnectForm.c_str());
-  } else {
-    response->printf("<p>Connected to '%s'</p>", SSID);
   }
 
   printHTMLHeatPump(response);
@@ -246,7 +244,7 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
     bvd);
 
-  //printHTMLBottom(response);
+  printHTMLBottom(response);
   request->send(response);
 
   intLEDOff();
@@ -513,10 +511,10 @@ void CWifiManager::printHTMLBottom(Print *p) {
   snprintf_P(mqttStat, 255, PSTR("state: %i / connected: %i"), mqtt.state(), mqtt.connected());
 
   float t = sensorProvider->getTemperature(NULL);
-  p->printf_P(htmlBottom, DEVICE_NAME, hr, min % 60, sec % 60, 
-    dBmtoPercentage(WiFi.RSSI()),
+  p->printf_P(htmlBottom, hr, min % 60, sec % 60, 
+    isApMode() ? "self-hosted AP" : SSID, dBmtoPercentage(WiFi.RSSI()),
     configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
-    sensorProvider->getBatteryVoltage(NULL), mqttStat);
+    mqttStat);
 }
 
 void CWifiManager::printHTMLHeatPump(Print *p) {
