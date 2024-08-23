@@ -91,6 +91,8 @@ void CWifiManager::listen() {
   server->on("/config", HTTP_POST, std::bind(&CWifiManager::handleConfig, this, std::placeholders::_1));
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
   server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
+  // API
+  server->on("/api", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1));
 
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
@@ -217,7 +219,7 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
   Log.infoln("handleRoot");
   intLEDOn();
 
-  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+  AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
   printHTMLTop(response);
 
   if (isApMode()) {
@@ -257,7 +259,7 @@ void CWifiManager::handleConnect(AsyncWebServerRequest *request) {
   String ssid = request->arg("ssid");
   String password = request->arg("password");
   
-  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+  AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
   
   printHTMLTop(response);
   response->printf("<p>Connecting to '%s' ... see you on the other side!</p>", ssid.c_str());
@@ -332,11 +334,30 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
-uint32_t dataLen = strlen_P(cssPico);
+void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
+  Log.infoln("handleRestAPI: %s", request->methodToString());
+  
+  if (request->method() == HTTP_GET) {
+    JsonDocument ac = sensorProvider->getACSettings();
+  
+    String jsonStr;
+    serializeJson(ac, jsonStr);
+    Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json; charset=UTF-8");
+    response->print(jsonStr);
+    response->setCode(200);
+    request->send(response);
+  } else if (request->method() == HTTP_POST) {
+
+  } 
+
+}
+
 void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
   Log.infoln("handleStyleCSS");
-  //AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
-  AsyncWebServerResponse *response = request->beginChunkedResponse("text/plain; charset=UTF-8", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+  static uint32_t dataLen = strlen_P(cssPico);
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/css; charset=UTF-8", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
     size_t len = (dataLen>maxLen)?maxLen:dataLen;
     if (len > 0) {
       memcpy_P(buffer, cssPico + index, len);
@@ -346,8 +367,6 @@ void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
     }
     return len;
   });
-  
-  //response->printf_P(cssPico);
   request->send(response);
 }
 
@@ -482,7 +501,7 @@ void CWifiManager::mqttCallback(char *topic, uint8_t *payload, unsigned int leng
 }
 
 void CWifiManager::printHTMLTop(Print *p) {
-  p->printf(htmlTop.c_str(), configuration.name, configuration.name);
+  p->printf_P(htmlTop, configuration.name, configuration.name);
 }
 
 void CWifiManager::printHTMLBottom(Print *p) {
@@ -494,7 +513,7 @@ void CWifiManager::printHTMLBottom(Print *p) {
   snprintf_P(mqttStat, 255, PSTR("state: %i / connected: %i"), mqtt.state(), mqtt.connected());
 
   float t = sensorProvider->getTemperature(NULL);
-  p->printf(htmlBottom.c_str(), DEVICE_NAME, hr, min % 60, sec % 60, 
+  p->printf_P(htmlBottom, DEVICE_NAME, hr, min % 60, sec % 60, 
     dBmtoPercentage(WiFi.RSSI()),
     configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
     sensorProvider->getBatteryVoltage(NULL), mqttStat);

@@ -1,25 +1,29 @@
 #include "wifi/HTMLAssets.h"
 
-const String htmlTop = FPSTR("<html>\
-  <head>\
-  <meta charset='UTF-8'>\
-  <title>%s</title>\
-  <style>\
-    body { background-color: #303030; font-family: 'Anaheim',sans-serif; Color: #d8d8d8; }\
-    input, select { margin-bottom: 0.4em; }\
-  </style>\
-  </head>\
-  <body>\
-  <h1>%s - Mitsubishi AC Controller</h1>");
+const char htmlTop[] PROGMEM = R"=====(
+<html>
+  <head>
+  <meta charset='UTF-8'>
+  <title>%s</title>
+  <style>
+    body { background-color: #303030; font-family: 'Anaheim',sans-serif; Color: #d8d8d8; }
+    input, select { margin-bottom: 0.4em; }
+  </style>
+  </head>
+  <body>
+  <h1>%s - Mitsubishi AC Controller</h1>
+)=====";
 
-const String htmlBottom = FPSTR("<p><b>%s</b><br>\
-  Uptime: <b>%02d:%02d:%02d</b><br/>\
-  WiFi signal strength: <b>%i%%</b><br/>\
-  Temperature: <b>%0.2f %s</b><br/>\
-  Battery: <b>%0.2fV</b><br/>\
-  MQTT: <b>%s</b>\
-  </p></body>\
-</html>");
+const char htmlBottom[] PROGMEM = R"=====(
+<p><b>%s</b><br>
+  Uptime: <b>%02d:%02d:%02d</b><br/>
+  WiFi signal strength: <b>%i%%</b><br/>
+  Temperature: <b>%0.2f %s</b><br/>
+  Battery: <b>%0.2fV</b><br/>
+  MQTT: <b>%s</b>
+  </p></body>
+</html>
+)=====";
 
 const String htmlWifiApConnectForm = FPSTR("<hr><h2>Connect to WiFi Access Point (AP)</h2>\
   <form method='POST' action='/connect' enctype='application/x-www-form-urlencoded'>\

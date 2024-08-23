@@ -49,6 +49,7 @@ private:
   void handleConfig(AsyncWebServerRequest *request);
   void handleFactoryReset(AsyncWebServerRequest *request);
   void handleStyleCSS(AsyncWebServerRequest *request);
+  void handleRestAPI(AsyncWebServerRequest *request);
 
   void printHTMLTop(Print *p);
   void printHTMLBottom(Print *p);
