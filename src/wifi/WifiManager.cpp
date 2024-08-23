@@ -90,6 +90,7 @@ void CWifiManager::listen() {
   server->on("/connect", HTTP_POST, std::bind(&CWifiManager::handleConnect, this, std::placeholders::_1));
   server->on("/config", HTTP_POST, std::bind(&CWifiManager::handleConfig, this, std::placeholders::_1));
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
+  server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
 
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
@@ -216,7 +217,7 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
   Log.infoln("handleRoot");
   intLEDOn();
 
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
+  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
   printHTMLTop(response);
 
   if (isApMode()) {
@@ -256,7 +257,7 @@ void CWifiManager::handleConnect(AsyncWebServerRequest *request) {
   String ssid = request->arg("ssid");
   String password = request->arg("password");
   
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
+  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
   
   printHTMLTop(response);
   response->printf("<p>Connecting to '%s' ... see you on the other side!</p>", ssid.c_str());
@@ -320,7 +321,7 @@ void CWifiManager::handleConfig(AsyncWebServerRequest *request) {
 void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   Log.infoln("handleFactoryReset");
   
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
+  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
   response->setCode(200);
   response->printf("OK");
 
@@ -328,6 +329,23 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   tMillis = millis();
   rebootNeeded = true;
   
+  request->send(response);
+}
+
+uint32_t dataLen = strlen_P(cssPico);
+void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
+  Log.infoln("handleStyleCSS");
+  //AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+  AsyncWebServerResponse *response = request->beginChunkedResponse("text/plain; charset=UTF-8", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+    size_t len = (dataLen>maxLen)?maxLen:dataLen;
+    if (len > 0) {
+      memcpy_P(buffer, cssPico + index, len);
+      dataLen -= len;
+    }
+    return len;
+  });
+  
+  //response->printf_P(cssPico);
   request->send(response);
 }
 
