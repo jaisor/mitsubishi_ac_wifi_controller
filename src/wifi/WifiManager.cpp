@@ -246,7 +246,7 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
     configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
     bvd);
 
-  printHTMLBottom(response);
+  //printHTMLBottom(response);
   request->send(response);
 
   intLEDOff();

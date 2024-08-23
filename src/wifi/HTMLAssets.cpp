@@ -1,27 +1,37 @@
 #include "wifi/HTMLAssets.h"
 
 const char htmlTop[] PROGMEM = R"=====(
-<html>
+<!doctype html>
+<html lang="en">
   <head>
-  <meta charset='UTF-8'>
-  <title>%s</title>
-  <style>
-    body { background-color: #303030; font-family: 'Anaheim',sans-serif; Color: #d8d8d8; }
-    input, select { margin-bottom: 0.4em; }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="/style.css" />
+    <title>%s</title>
   </head>
-  <body>
-  <h1>%s - Mitsubishi AC Controller</h1>
+  <body style="min-height: 1271px;">
+    <header class="container">
+      <hgroup>
+        <h1>Mitsubishi AC Controller!</h1>
+        <p>%s</p>
+      </hgroup>
+    </header>
+    <main class="container">
 )=====";
 
 const char htmlBottom[] PROGMEM = R"=====(
-<p><b>%s</b><br>
-  Uptime: <b>%02d:%02d:%02d</b><br/>
-  WiFi signal strength: <b>%i%%</b><br/>
-  Temperature: <b>%0.2f %s</b><br/>
-  Battery: <b>%0.2fV</b><br/>
-  MQTT: <b>%s</b>
-  </p></body>
+    </main>
+    <footer class="container">
+      <div class="grid">
+        <div>Uptime<br><b>%02d:%02d:%02d</b></div>
+        <div>WiFi signal strength<br><b>%i%%</b></div>
+        <div>Temperature<br><b>%0.2f %s</b></div>
+        <div>Battery<br><b>%0.2fV</b></div>
+        <div>MQTT<br><b>%s</b></div>
+      </div>
+    </footer>
+  </body>
 </html>
 )=====";
 

@@ -11,13 +11,19 @@
     <header class="container">
       <hgroup>
         <h1>Mitsubishi AC Controller!</h1>
-        <p>%s / connected to WiFi some-rssid</p>
+        <p>%s</p>
       </hgroup>
     </header>
     <main class="container">
     </main>
     <footer class="container">
-      WiFi: RIs
+      <div class="grid">
+        <div>Uptime<br><b>%02d:%02d:%02d</b></div>
+        <div>WiFi signal strength<br><b>%i%%</b></div>
+        <div>Temperature<br><b>%0.2f %s</b></div>
+        <div>Battery<br><b>%0.2fV</b></div>
+        <div>MQTT<br><b>%s</b></div>
+      </div>
     </footer>
   </body>
 </html>
