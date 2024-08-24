@@ -2,20 +2,42 @@
 
 const char htmlTop[] PROGMEM = R"=====(
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark" />
     <link rel="stylesheet" href="/style.css" />
     <title>%s</title>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelector('.rebootForm').on('submit', 'form', function () {
+          setTimeout(function () { location.reload(true); }, 1000);
+        });
+      });
+    </script>
   </head>
-  <body style="min-height: 1271px;">
+  <body>
     <header class="container">
-      <hgroup>
-        <h1>Mitsubishi AC Controller!</h1>
-        <p>%s</p>
-      </hgroup>
+      <span>🛜%s <b>%i%%</b></span>
+      <span>🌡️Room <b>%0.2f°%s</b></span>
+      <nav>
+        <ul><li>
+          <hgroup>
+            <h2>Mitsubishi AC Controller!</h2>
+            <p>%s</p>
+          </hgroup>
+        </li></ul>
+        <ul><li align="right">
+          <details class="dropdown">
+            <summary>⚙️</summary>
+            <ul dir="rtl">
+              <li><a href="/wifi">WiFi 🛜</a></li>
+              <li><a href="/device">Device 📱</a></li>
+            </ul>
+          </details>
+      </li></ul>
+      </nav>
     </header>
     <main class="container">
 )=====";
@@ -23,78 +45,99 @@ const char htmlTop[] PROGMEM = R"=====(
 const char htmlBottom[] PROGMEM = R"=====(
     </main>
     <footer class="container">
-      <div class="grid">
-        <div>⌛ <b>%02d:%02d:%02d</b></div>
-        <div>🛜 %s <b>%i%%</b></div>
-        <div>🌡️ <b>%0.2f°%s</b></div>
-        <div>MQTT <b>%s</b></div>
-      </div>
+      <span>⌛<b>%02d:%02d:%02d</b></span>
+      <span>MQTT %s</span>
     </footer>
   </body>
 </html>
 )=====";
 
-const String htmlWifiApConnectForm = FPSTR("<h2>Connect to WiFi Access Point (AP)</h2>\
-  <form method='POST' action='/connect' enctype='application/x-www-form-urlencoded'>\
-    <label for='ssid'>SSID (AP Name):</label><br>\
-    <input type='text' id='ssid' name='ssid'><br><br>\
-    <label for='pass'>Password (WPA2):</label><br>\
-    <input type='password' id='pass' name='password' minlength='8' autocomplete='off' required><br><br>\
-    <input type='submit' value='Connect...'>\
-  </form>");
+const char htmlWifi[] PROGMEM = R"=====(
+      <h3>WiFi Settings</h3>
+      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' class='rebootForm'>
+        <label for='ssid'>SSID (AP Name):</label><br>
+        <input type='text' id='ssid' name='ssid'><br><br>
+        <label for='pass'>Password (WPA2):</label><br>
+        <input type='password' id='pass' name='password' minlength='8' autocomplete='off' required><br><br>
+        <input type='submit' value='Connect...'>
+      </form>
+)=====";
 
-const String htmlDeviceConfigs = FPSTR("<h2>Configs</h2>\
-  <form method='POST' action='/config' enctype='application/x-www-form-urlencoded'>\
-    <label for='deviceName'>Device name:</label><br>\
-    <input type='text' id='deviceName' name='deviceName' value='%s'><br>\
-    <label for='tempUnit'>Temperature units:</label><br>\
-    <select name='tempUnit' id='tempUnit'>\
-    %s\
-    </select><br>\
-    <br>\
-    <label for='mqttServer'>MQTT server:</label><br>\
-    <input type='text' id='mqttServer' name='mqttServer' value='%s'><br>\
-    <label for='mqttPort'>MQTT port:</label><br>\
-    <input type='text' id='mqttPort' name='mqttPort' value='%u'><br>\
-    <label for='mqttTopic'>MQTT topic:</label><br>\
-    <input type='text' id='mqttTopic' name='mqttTopic' value='%s'><br>\
-    <br>\
-    <label for='battVoltsDivider'>Battery volt measurement divider:</label><br>\
-    <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'><br>\
-    <br>\
-    <input type='submit' value='Set...'>\
-  </form>");
+const char htmlDevice[] PROGMEM = R"=====(
+      <h3>Device Settings</h3>
+      <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' class='rebootForm'>
+        <fieldset>
+          <label>
+            Device name
+            <input type='text' id='deviceName' name='deviceName' value='%s'>
+          </label>
+          <label>
+            Temperature units
+            <select name='tempUnit' id='tempUnit'>
+              %s
+            </select>
+          </label>
+          <label>MQTT server
+            <input type='text' id='mqttServer' name='mqttServer' value='%s'>
+          </label>
+          <label>MQTT port
+            <input type='text' id='mqttPort' name='mqttPort' value='%u'>
+          </label>
+          <label>
+            MQTT topic
+            <input type='text' id='mqttTopic' name='mqttTopic' value='%s'>
+          </label>
+          <label>
+            Battery volt measurement divider
+            <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'>
+          </label>
+        </fieldset>
+        <input type='submit' value='Submit'>
+      </form>
+)=====";
 
-const String htmlHeatPump = FPSTR("<h2>Heat Pump / AC Settings %s</h2>\
-  %s\
-  <div>Room temperature: <b>%0.1f %s</b></div><br>\
-  <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>\
-    <label for='power'>Power:</label> \
-    <select name='power' id='power'>\
-    %s\
-    </select><br>\
-    <label for='mode'>Mode:</label> \
-    <select name='mode' id='mode'>\
-    %s\
-    </select><br>\
-    <label for='temperature'>Desired temperature:</label> \
-    <input type='text' id='temperature' name='temperature' size='4' value='%0.1f'>%s<br>\
-    <label for='fan'>Fan:</label> \
-    <select name='fan' id='fan'>\
-    %s\
-    </select><br>\
-    <label for='vane'>Vertical vane:</label> \
-    <select name='vane' id='vane'>\
-    %s\
-    </select><br>\
-    <label for='wideVane'>Horizontal vane:</label> \
-    <select name='wideVane' id='wideVane'>\
-    %s\
-    </select><br>\
-    <br>\
-    <pre style='font-family: monospace; font-size: 9px;'>%s</pre>\
-    <input type='submit' value='Set...'>\
-  </form>");
+const char htmlHeatPump[] PROGMEM = R"=====(
+      <h3>Heat Pump / AC Settings %s%s</h3>
+      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>
+        <fieldset>
+          <label>
+            Power
+            <select name='power' id='power'>
+            %s
+            </select>
+          </label>
+          <label>
+            Mode
+            <select name='mode' id='mode'>
+            %s
+            </select>
+          </label>
+          <label>
+            Desired temperature <output id="tempOutputId">%i</output>° %s
+            <input type="range" id="temperature" value="%i" min="%i" max="%i" step="1" oninput="tempOutputId.value = temperature.value">
+          </label>
+          <label>
+            Fan
+            <select name='fan' id='fan'>
+            %s
+            </select>
+          </label>
+          <label>
+            Vertical vane
+            <select name='vane' id='vane'>
+            %s
+            </select>
+          </label> 
+          <label>
+            Horizontal vane
+            <select name='wideVane' id='wideVane'>
+            %s
+            </select><br>
+          </label> 
+        </fieldset>
+        <input type='submit' value='Submit'>
+      </form>
+)=====";
 
 const char cssPico[] PROGMEM = R"=====(
 @charset "UTF-8";/*!

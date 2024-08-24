@@ -4,8 +4,8 @@
 
 extern const char htmlTop[];
 extern const char htmlBottom[];
-extern const String htmlWifiApConnectForm;
-extern const String htmlDeviceConfigs;
-extern const String htmlHeatPump;
+extern const char htmlWifi[];
+extern const char htmlDevice[];
+extern const char htmlHeatPump[];
 
 extern const char cssPico[];

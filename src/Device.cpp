@@ -231,6 +231,7 @@ float CDevice::getTemperature(bool *current) {
   if (tsHPStatusUpdated > 0) {
     return hpStatus.roomTemperature;
   }
+  return 0;
 }
 #endif
 

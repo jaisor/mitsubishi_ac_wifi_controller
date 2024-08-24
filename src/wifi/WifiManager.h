@@ -45,8 +45,8 @@ private:
   void listen();
 
   void handleRoot(AsyncWebServerRequest *request);
-  void handleConnect(AsyncWebServerRequest *request);
-  void handleConfig(AsyncWebServerRequest *request);
+  void handleWifi(AsyncWebServerRequest *request);
+  void handleDevice(AsyncWebServerRequest *request);
   void handleFactoryReset(AsyncWebServerRequest *request);
   void handleStyleCSS(AsyncWebServerRequest *request);
   void handleRestAPI(AsyncWebServerRequest *request);

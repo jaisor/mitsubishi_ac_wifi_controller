@@ -87,10 +87,12 @@ void CWifiManager::listen() {
 
   // Web
   server->on("/", std::bind(&CWifiManager::handleRoot, this, std::placeholders::_1));
-  server->on("/connect", HTTP_POST, std::bind(&CWifiManager::handleConnect, this, std::placeholders::_1));
-  server->on("/config", HTTP_POST, std::bind(&CWifiManager::handleConfig, this, std::placeholders::_1));
-  server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
   server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
+  //
+  server->on("/wifi", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleWifi, this, std::placeholders::_1));
+  server->on("/device", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleDevice, this, std::placeholders::_1));
+  //
+  server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
   // API
   server->on("/api", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1));
 
@@ -215,111 +217,121 @@ void CWifiManager::loop() {
 }
 
 void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
-
   Log.infoln("handleRoot");
   intLEDOn();
 
   AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
   printHTMLTop(response);
-
-  if (isApMode()) {
-    response->printf(htmlWifiApConnectForm.c_str());
-  }
-
   printHTMLHeatPump(response);
-
-  char tempUnit[256];
-  snprintf(tempUnit, 256, "<option %s value='0'>Celsius</option>\
-    <option %s value='1'>Fahrenheit</option>", 
-    configuration.tempUnit == TEMP_UNIT_CELSIUS ? "selected" : "", 
-    configuration.tempUnit == TEMP_UNIT_FAHRENHEIT ? "selected" : "");
-
-#ifdef BATTERY_SENSOR
-  float bvd = configuration.battVoltsDivider;
-#else
-  float bvd = 0;
-#endif
-
-  response->printf(htmlDeviceConfigs.c_str(), configuration.name, tempUnit,
-    configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-    bvd);
-
   printHTMLBottom(response);
   request->send(response);
 
   intLEDOff();
 }
 
-void CWifiManager::handleConnect(AsyncWebServerRequest *request) {
+void CWifiManager::handleWifi(AsyncWebServerRequest *request) {
+  Log.infoln("handleWifi: %s", request->methodToString());
+  intLEDOn();
 
-  Log.infoln("handleConnect");
+  if (request->method() == HTTP_POST) {
+    String ssid = request->arg("ssid");
+    String password = request->arg("password");
+    
+    AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
+    
+    printHTMLTop(response);
+    response->printf("<p>Connecting to '%s' ... see you on the other side!</p>", ssid.c_str());
+    printHTMLBottom(response);
 
-  String ssid = request->arg("ssid");
-  String password = request->arg("password");
-  
-  AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
-  
-  printHTMLTop(response);
-  response->printf("<p>Connecting to '%s' ... see you on the other side!</p>", ssid.c_str());
-  printHTMLBottom(response);
+    request->send(response);
 
-  request->send(response);
+    ssid.toCharArray(configuration.wifiSsid, sizeof(configuration.wifiSsid));
+    password.toCharArray(configuration.wifiPassword, sizeof(configuration.wifiPassword));
 
-  ssid.toCharArray(configuration.wifiSsid, sizeof(configuration.wifiSsid));
-  password.toCharArray(configuration.wifiPassword, sizeof(configuration.wifiPassword));
+    Log.noticeln("Saved config SSID: '%s'", configuration.wifiSsid);
 
-  Log.noticeln("Saved config SSID: '%s'", configuration.wifiSsid);
+    EEPROM_saveConfig();
 
-  EEPROM_saveConfig();
+    strcpy(SSID, configuration.wifiSsid);
+    WiFi.disconnect(true, true);
+    tMillis = millis();
+    rebootNeeded = true;
+  } else {
+    AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
+    printHTMLTop(response);
+    response->printf_P(htmlWifi);
+    printHTMLBottom(response);
+    request->send(response);
+  }
 
-  strcpy(SSID, configuration.wifiSsid);
-  WiFi.disconnect(true, true);
-  tMillis = millis();
-  rebootNeeded = true;
+  intLEDOff();
 }
 
-void CWifiManager::handleConfig(AsyncWebServerRequest *request) {
+void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
+  Log.infoln("handleDevice: %s", request->methodToString());
+  intLEDOn();
 
-  Log.infoln("handleConfig");
+  if (request->method() == HTTP_POST) {
+    String deviceName = request->arg("deviceName");
+    deviceName.toCharArray(configuration.name, sizeof(configuration.name));
+    Log.infoln("Device req name: %s", deviceName);
+    Log.infoln("Device size %i name: %s", sizeof(configuration.name), configuration.name);
 
-  String deviceName = request->arg("deviceName");
-  deviceName.toCharArray(configuration.name, sizeof(configuration.name));
-  Log.infoln("Device req name: %s", deviceName);
-  Log.infoln("Device size %i name: %s", sizeof(configuration.name), configuration.name);
+    String mqttServer = request->arg("mqttServer");
+    mqttServer.toCharArray(configuration.mqttServer, sizeof(configuration.mqttServer));
+    Log.infoln("MQTT Server: %s", mqttServer);
 
-  String mqttServer = request->arg("mqttServer");
-  mqttServer.toCharArray(configuration.mqttServer, sizeof(configuration.mqttServer));
-  Log.infoln("MQTT Server: %s", mqttServer);
+    uint16_t mqttPort = atoi(request->arg("mqttPort").c_str());
+    configuration.mqttPort = mqttPort;
+    Log.infoln("MQTT Port: %u", mqttPort);
 
-  uint16_t mqttPort = atoi(request->arg("mqttPort").c_str());
-  configuration.mqttPort = mqttPort;
-  Log.infoln("MQTT Port: %u", mqttPort);
+    String mqttTopic = request->arg("mqttTopic");
+    mqttTopic.toCharArray(configuration.mqttTopic, sizeof(configuration.mqttTopic));
+    Log.infoln("MQTT Topic: %s", mqttTopic);
 
-  String mqttTopic = request->arg("mqttTopic");
-  mqttTopic.toCharArray(configuration.mqttTopic, sizeof(configuration.mqttTopic));
-  Log.infoln("MQTT Topic: %s", mqttTopic);
+  #ifdef BATTERY_SENSOR
+    float battVoltsDivider = atof(request->arg("battVoltsDivider").c_str());
+    configuration.battVoltsDivider = battVoltsDivider;
+    Log.infoln("battVoltsDivider: %D", battVoltsDivider);
+  #endif
 
-#ifdef BATTERY_SENSOR
-  float battVoltsDivider = atof(request->arg("battVoltsDivider").c_str());
-  configuration.battVoltsDivider = battVoltsDivider;
-  Log.infoln("battVoltsDivider: %D", battVoltsDivider);
-#endif
+    uint16_t tempUnit = atoi(request->arg("tempUnit").c_str());
+    configuration.tempUnit = tempUnit;
+    Log.infoln("Temperature unit: %u", tempUnit);
 
-#ifdef TEMP_SENSOR
-  uint16_t tempUnit = atoi(request->arg("tempUnit").c_str());
-  configuration.tempUnit = tempUnit;
-  Log.infoln("Temperature unit: %u", tempUnit);
-#endif
+    EEPROM_saveConfig();
+    
+    request->redirect("/");
+    tMillis = millis();
+    rebootNeeded = true;
+  } else {
 
-  EEPROM_saveConfig();
-  
-  request->redirect("/");
-  tMillis = millis();
-  rebootNeeded = true;
+    char tempUnit[256];
+    snprintf(tempUnit, 256, "<option %s value='0'>Celsius</option>\
+      <option %s value='1'>Fahrenheit</option>", 
+      configuration.tempUnit == TEMP_UNIT_CELSIUS ? "selected" : "", 
+      configuration.tempUnit == TEMP_UNIT_FAHRENHEIT ? "selected" : "");
+
+    #ifdef BATTERY_SENSOR
+      float bvd = configuration.battVoltsDivider;
+    #else
+      float bvd = 0;
+    #endif
+
+    AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
+    printHTMLTop(response);
+    response->printf_P(htmlDevice, configuration.name, tempUnit,
+      configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
+      bvd);
+    printHTMLBottom(response);
+    request->send(response);
+  }
+  intLEDOff();
 }
 
 void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   Log.infoln("handleFactoryReset");
+  intLEDOn();
   
   AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
   response->setCode(200);
@@ -330,10 +342,12 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   rebootNeeded = true;
   
   request->send(response);
+  intLEDOff();
 }
 
 void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
   Log.infoln("handleRestAPI: %s", request->methodToString());
+  intLEDOn();
   
   if (request->method() == HTTP_GET) {
     JsonDocument ac = sensorProvider->getACSettings();
@@ -350,6 +364,7 @@ void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
 
   } 
 
+  intLEDOff();
 }
 
 void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
@@ -383,7 +398,7 @@ void CWifiManager::postSensorUpdate() {
   intLEDOn();
 
   char topic[255];
-  float v; int iv;
+  int iv;
 
   iv = dBmtoPercentage(WiFi.RSSI());
   sensorJson["gw_wifi_percent"] = iv;
@@ -403,6 +418,7 @@ void CWifiManager::postSensorUpdate() {
 
 #ifdef TEMP_SENSOR_PIN
   bool sensorReady = sensorProvider->isSensorReady();
+  float v;
 
   if (sensorReady) {
     bool current = false;
@@ -499,7 +515,14 @@ void CWifiManager::mqttCallback(char *topic, uint8_t *payload, unsigned int leng
 }
 
 void CWifiManager::printHTMLTop(Print *p) {
-  p->printf_P(htmlTop, configuration.name, configuration.name);
+  float t = sensorProvider->getTemperature(NULL);
+  p->printf_P(htmlTop, 
+    configuration.name, 
+    isApMode() ? softAP_SSID : SSID, dBmtoPercentage(WiFi.RSSI()),
+    configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
+    configuration.name
+    
+  );
 }
 
 void CWifiManager::printHTMLBottom(Print *p) {
@@ -508,13 +531,13 @@ void CWifiManager::printHTMLBottom(Print *p) {
   int hr = min / 60;
 
   char mqttStat[255];
-  snprintf_P(mqttStat, 255, PSTR("state: %i / connected: %i"), mqtt.state(), mqtt.connected());
+  if (mqtt.state() == MQTT_CONNECTED) {
+    snprintf_P(mqttStat, 255, PSTR("✅"));
+  } else {
+    snprintf_P(mqttStat, 255, PSTR("❌[%i]"), mqtt.state());
+  }
 
-  float t = sensorProvider->getTemperature(NULL);
-  p->printf_P(htmlBottom, hr, min % 60, sec % 60, 
-    isApMode() ? "self-hosted AP" : SSID, dBmtoPercentage(WiFi.RSSI()),
-    configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
-    mqttStat);
+  p->printf_P(htmlBottom, hr, min % 60, sec % 60, mqttStat);
 }
 
 void CWifiManager::printHTMLHeatPump(Print *p) {
@@ -525,7 +548,6 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
   serializeJson(ac, jsonStr);
   Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
 
-  float rt = ac.containsKey("roomTemperature") ? ac["roomTemperature"] : 0;
   float t = ac.containsKey("temperature") ? ac["temperature"] : 0;
 
   char selectPower[512] = "";
@@ -583,13 +605,18 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
   // {"AUTO", "1", "2", "3", "4", "5", "SWING"};
   // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
 
-  p->printf(htmlHeatPump.c_str(), 
+  uint8 tu = (uint8)lroundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32);
+  uint8 tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 15 : 60;
+  uint8 tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 35 : 95;
+
+  p->printf_P(htmlHeatPump, 
     ac.containsKey("connected") && ac["connected"] ? PSTR("✅") : PSTR("❌"),
-    ac.containsKey("operating") && ac["operating"] ? "<div style='color: green; font-weight: bold;'>OPERATING</div><br>" : "",
-    configuration.tempUnit == TEMP_UNIT_CELSIUS ? rt : rt * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
+    ac.containsKey("operating") && ac["operating"] ? "⚡" : "",
     selectPower,
     selectMode,
-    configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F",
+    //
+    tu, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F", tu, tminu, tmaxu,
+    //
     selectFan, // fan
     "", // vane
     "", // wideVane
