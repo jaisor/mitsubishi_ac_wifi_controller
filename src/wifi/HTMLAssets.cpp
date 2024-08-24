@@ -19,16 +19,16 @@ const char htmlTop[] PROGMEM = R"=====(
   </head>
   <body>
     <header class="container">
-      <span>🛜%s <b>%i%%</b></span>
-      <span>🌡️Room <b>%0.2f°%s</b></span>
+      <span>🛜 %s <b>%i%%</b></span>
+      <span>🌡️ Room <b>%0.2f°%s</b></span>
       <nav>
         <ul><li>
           <hgroup>
-            <h2>Mitsubishi AC Controller!</h2>
-            <p>%s</p>
+            <h2><a href="/">%s</a></h2>
+            <p>Mitsubishi AC Controller!</p>
           </hgroup>
         </li></ul>
-        <ul><li align="right">
+        <ul><li>
           <details class="dropdown">
             <summary>⚙️</summary>
             <ul dir="rtl">
@@ -55,10 +55,15 @@ const char htmlBottom[] PROGMEM = R"=====(
 const char htmlWifi[] PROGMEM = R"=====(
       <h3>WiFi Settings</h3>
       <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' class='rebootForm'>
-        <label for='ssid'>SSID (AP Name):</label><br>
-        <input type='text' id='ssid' name='ssid'><br><br>
-        <label for='pass'>Password (WPA2):</label><br>
-        <input type='password' id='pass' name='password' minlength='8' autocomplete='off' required><br><br>
+        <fieldset>
+          <label>
+            Access point name (SSID)
+            <input type='text' id='ssid' name='ssid'>
+          </label>
+          <label>WPA2 password
+            <input type='password' id='pass' name='password' minlength='8' autocomplete='off' required>
+          </label>
+        </fieldset>
         <input type='submit' value='Connect...'>
       </form>
 )=====";
@@ -92,7 +97,7 @@ const char htmlDevice[] PROGMEM = R"=====(
             <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'>
           </label>
         </fieldset>
-        <input type='submit' value='Submit'>
+        <input type='submit' value='Submit...'>
       </form>
 )=====";
 
@@ -135,7 +140,7 @@ const char htmlHeatPump[] PROGMEM = R"=====(
             </select><br>
           </label> 
         </fieldset>
-        <input type='submit' value='Submit'>
+        <input type='submit' value='Submit...'>
       </form>
 )=====";
 

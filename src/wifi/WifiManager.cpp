@@ -605,9 +605,9 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
   // {"AUTO", "1", "2", "3", "4", "5", "SWING"};
   // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
 
-  uint8 tu = (uint8)lroundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32);
-  uint8 tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 15 : 60;
-  uint8 tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 35 : 95;
+  uint8_t tu = (uint8_t)lroundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32);
+  uint8_t tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 15 : 60;
+  uint8_t tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 35 : 95;
 
   p->printf_P(htmlHeatPump, 
     ac.containsKey("connected") && ac["connected"] ? PSTR("✅") : PSTR("❌"),

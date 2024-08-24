@@ -17,21 +17,21 @@
       </head>
       <body>
         <header class="container">
-          <span>🛜rssid <b>100%</b></span>
-          <span>🌡️Room <b>32.00°F</b></span>
+          <span>🛜 jaisor-n <b>100%</b></span>
+          <span>🌡️ Room <b>0.00°C</b></span>
           <nav>
             <ul><li>
               <hgroup>
-                <h2>Mitsubishi AC Controller!</h2>
-                <p>ESP8266MHVAC</p>
+                <h2><a href="/">ESP32MHVAC</a></h2>
+                <p>Mitsubishi AC Controller!</p>
               </hgroup>
             </li></ul>
-            <ul><li align="right">
+            <ul><li>
               <details class="dropdown">
                 <summary>⚙️</summary>
                 <ul dir="rtl">
-                  <li><a href="#">WiFi 🛜</a></li>
-                  <li><a href="#">Device 📱</a></li>
+                  <li><a href="/wifi">WiFi 🛜</a></li>
+                  <li><a href="/device">Device 📱</a></li>
                 </ul>
               </details>
           </li></ul>
@@ -39,29 +39,29 @@
         </header>
         <main class="container">
     
-          <h3>Heat Pump / AC Settings ✅⚡</h3>
+          <h3>Heat Pump / AC Settings ❌</h3>
           <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>
             <fieldset>
               <label>
                 Power
                 <select name='power' id='power'>
-                      <option  value='OFF'>OFF</option>      <option selected value='ON'>ON</option>
+                
                 </select>
               </label>
               <label>
                 Mode
                 <select name='mode' id='mode'>
-                      <option  value='HEAT'>HEAT</option>      <option  value='DRY'>DRY</option>      <option selected value='COOL'>COOL</option>      <option  value='FAN'>FAN</option>      <option  value='AUTO'>AUTO</option>      
+                
                 </select>
               </label>
               <label>
-                Desired temperature <output id="tempOutputId">73</output>° F
-                <input type="range" id="temperature" value="73" min="60" max="95" step="1" oninput="tempOutputId.value = temperature.value">
+                Desired temperature <output id="tempOutputId">0</output>° C
+                <input type="range" id="temperature" value="0" min="15" max="35" step="1" oninput="tempOutputId.value = temperature.value">
               </label>
               <label>
                 Fan
                 <select name='fan' id='fan'>
-                      <option selected value='AUTO'>AUTO</option>      <option  value='QUIET'>QUIET</option>      <option  value='1'>1</option>      <option  value='2'>2</option>      <option  value='3'>3</option>      <option  value='4'>4</option>      <option  value='5'>5</option>      <option  value='SWING'>SWING</option>      
+                
                 </select>
               </label>
               <label>
@@ -80,46 +80,10 @@
             <input type='submit' value='Submit'>
           </form>
     
-          <h2>Configs</h2>
-          <form method='POST' action='/config' enctype='application/x-www-form-urlencoded' class='rebootForm'>
-            <fieldset>
-              <label>
-                Device name
-                <input type='text' id='deviceName' name='deviceName' value='ESP8266MHVAC'>
-              </label>
-              <label>
-                Temperature units
-                <select name='tempUnit' id='tempUnit'>
-                  <option  value='0'>Celsius</option>    <option selected value='1'>Fahrenheit</option>
-                </select>
-              </label>
-              <label>MQTT server
-                <input type='text' id='mqttServer' name='mqttServer' value='server.lan'>
-              </label>
-              <label>MQTT port
-                <input type='text' id='mqttPort' name='mqttPort' value='1883'>
-              </label>
-              <label>
-                MQTT topic
-                <input type='text' id='mqttTopic' name='mqttTopic' value='ac/dev'>
-              </label>
-              <label>
-                Battery volt measurement divider
-                <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='0.00'>
-              </label>
-            </fieldset>
-            <input type='submit' value='Set...'>
-          </form>
-    
         </main>
         <footer class="container">
-          <div class="grid">
-            <div>⌛ <b>00:00:14</b></div>
-            <div>🛜 jaisor-n <b>100%</b></div>
-            <div>🌡️ <b>32.00°F</b></div>
-            <div>MQTT <b>state: 0 / connected: 1</b></div>
-          </div>
+          <span>⌛<b>00:01:00</b></span>
+          <span>MQTT ✅</span>
         </footer>
       </body>
     </html>
-    
