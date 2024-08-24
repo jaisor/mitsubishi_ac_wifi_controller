@@ -113,7 +113,7 @@ CDevice::CDevice() {
   #ifdef CONFIG_IDF_TARGET_ESP32C3
     hpConnected = hp.connect(&Serial1);
   #else
-    hpConnected = hp.connect(&Serial2, HP_RX, HP_TX);
+    hpConnected = hp.connect(&Serial1, HP_RX, HP_TX);
   #endif
 #elif defined(ESP8266)
   #ifdef DISABLE_LOGGING

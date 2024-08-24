@@ -47,6 +47,7 @@ const char htmlBottom[] PROGMEM = R"=====(
     <footer class="container">
       <span>⌛<b>%02d:%02d:%02d</b></span>
       <span>MQTT %s</span>
+      <small>%s</small>
     </footer>
   </body>
 </html>

@@ -537,17 +537,17 @@ void CWifiManager::printHTMLBottom(Print *p) {
     snprintf_P(mqttStat, 255, PSTR("❌[%i]"), mqtt.state());
   }
 
-  p->printf_P(htmlBottom, hr, min % 60, sec % 60, mqttStat);
+  JsonDocument ac = sensorProvider->getACSettings();
+  String jsonStr;
+  serializeJson(ac, jsonStr);
+  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+
+  p->printf_P(htmlBottom, hr, min % 60, sec % 60, mqttStat, jsonStr.c_str());
 }
 
 void CWifiManager::printHTMLHeatPump(Print *p) {
 
   JsonDocument ac = sensorProvider->getACSettings();
-  
-  String jsonStr;
-  serializeJson(ac, jsonStr);
-  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
-
   float t = ac.containsKey("temperature") ? ac["temperature"] : 0;
 
   char selectPower[512] = "";
@@ -619,8 +619,7 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
     //
     selectFan, // fan
     "", // vane
-    "", // wideVane
-    jsonStr.c_str()
+    "" // wideVane
   );
 }
 
