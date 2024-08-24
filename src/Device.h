@@ -42,6 +42,7 @@ public:
 #endif
 
   virtual JsonDocument& getACSettings();
+  virtual void setACSettings(JsonDocument ac);
 
 private:
   unsigned long tMillisUp;

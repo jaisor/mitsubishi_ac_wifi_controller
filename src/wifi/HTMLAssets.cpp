@@ -10,9 +10,26 @@ const char htmlTop[] PROGMEM = R"=====(
     <link rel="stylesheet" href="/style.css" />
     <title>%s</title>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        document.querySelector('.rebootForm').on('submit', 'form', function () {
-          setTimeout(function () { location.reload(true); }, 1000);
+      document.addEventListener("DOMContentLoaded", function() {
+        document.querySelector("form").addEventListener("submit", function (event) {
+          var data = this;
+          var submit = data.querySelector("button[type='submit']");
+          var d = data.getAttribute("delay");
+          submit.setAttribute("aria-busy", true);
+          submit.setAttribute("disabled", "");
+          submit.innerHTML = "";
+          fetch(data.getAttribute("action"), {
+            method: data.getAttribute("method"),
+            body: new FormData(data)
+          }).then(res=>res.text())
+            .then(function (data) {
+              console.log("Submit");
+              setTimeout(function () {
+                console.log("Yes!" + d);
+                location.reload(true); 
+              }, d);
+            });
+          event.preventDefault();
         });
       });
     </script>
@@ -55,7 +72,7 @@ const char htmlBottom[] PROGMEM = R"=====(
 
 const char htmlWifi[] PROGMEM = R"=====(
       <h3>WiFi Settings</h3>
-      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' class='rebootForm'>
+      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' delay='5000'>
         <fieldset>
           <label>
             Access point name (SSID)
@@ -65,13 +82,13 @@ const char htmlWifi[] PROGMEM = R"=====(
             <input type='password' id='pass' name='password' minlength='8' autocomplete='off' required>
           </label>
         </fieldset>
-        <input type='submit' value='Connect...'>
+        <button type='submit' value='Submit'>Connect...</button>
       </form>
 )=====";
 
 const char htmlDevice[] PROGMEM = R"=====(
       <h3>Device Settings</h3>
-      <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' class='rebootForm'>
+      <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' delay='8000'>
         <fieldset>
           <label>
             Device name
@@ -98,13 +115,13 @@ const char htmlDevice[] PROGMEM = R"=====(
             <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'>
           </label>
         </fieldset>
-        <input type='submit' value='Submit...'>
+        <button type='submit' value='Submit'>Submit...</button>
       </form>
 )=====";
 
 const char htmlHeatPump[] PROGMEM = R"=====(
       <h3>Heat Pump / AC Settings %s%s</h3>
-      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>
+      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded' delay='1000'>
         <fieldset>
           <label>
             Power
@@ -141,7 +158,7 @@ const char htmlHeatPump[] PROGMEM = R"=====(
             </select><br>
           </label> 
         </fieldset>
-        <input type='submit' value='Submit...'>
+        <button type='submit' value='Submit'>Submit...</button>
       </form>
 )=====";
 

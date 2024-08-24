@@ -88,9 +88,12 @@ void CWifiManager::listen() {
   // Web
   server->on("/", std::bind(&CWifiManager::handleRoot, this, std::placeholders::_1));
   server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
+  server->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){ request->send(404); });
+  server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
   //
   server->on("/wifi", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleWifi, this, std::placeholders::_1));
   server->on("/device", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleDevice, this, std::placeholders::_1));
+  server->on("/hp", HTTP_POST, std::bind(&CWifiManager::handleHeatPump, this, std::placeholders::_1));
   //
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
   // API
@@ -328,6 +331,30 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
   }
   intLEDOff();
 }
+
+void CWifiManager::handleHeatPump(AsyncWebServerRequest *request) {
+  Log.infoln("handleHeatPump: %s", request->methodToString());
+  intLEDOn();
+
+  JsonDocument ac = sensorProvider->getACSettings();
+
+  ac["power"] = request->arg("power");
+  ac["mode"] = request->arg("mode");
+  ac["temperature"] = atoi(request->arg("temperature").c_str());
+  ac["fan"] = request->arg("fan");
+
+  String jsonStr;
+  serializeJson(ac, jsonStr);
+  Log.verboseln("new hpSettings: '%s'", jsonStr.c_str());
+  
+  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+  response->print("OK");
+  response->setCode(200);
+  request->send(response);
+
+  intLEDOff();
+}
+
 
 void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   Log.infoln("handleFactoryReset");

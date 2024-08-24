@@ -1,89 +1,96 @@
-
-    <!doctype html>
-    <html lang="en" data-theme="dark">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="color-scheme" content="light dark" />
-        <link rel="stylesheet" href="css/pico.pumpkin.min.css" />
-        <title>ESP8266MHVAC</title>
-        <script>
-          document.addEventListener("DOMContentLoaded", () => {
-            document.querySelector('.rebootForm').on('submit', 'form', function () {
-              setTimeout(function () { location.reload(true); }, 1000);
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="css/pico.pumpkin.min.css" />
+    <title>ESP32MHVAC</title>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        document.querySelector("form").addEventListener("submit", function (event) {
+          var data = this;
+          var submit = data.querySelector("button[type='submit']");
+          var d = data.getAttribute("delay");
+          submit.setAttribute("aria-busy", true);
+          submit.setAttribute("disabled", "");
+          submit.innerHTML = "";
+          fetch(data.getAttribute("action"), {
+            method: data.getAttribute("method"),
+            body: new FormData(data)
+          }).then(res=>res.text())
+            .then(function (data) {
+              console.log("Submit");
+              setTimeout(function () {
+                console.log("Yes!" + d);
+                location.reload(true); 
+              }, d);
             });
-          });
-        </script>
-      </head>
-      <body>
-        <header class="container">
-          <span>🛜 jaisor-n <b>100%</b></span>
-          <span>🌡️ Room <b>0.00°C</b></span>
-          <nav>
-            <ul><li>
-              <hgroup>
-                <h2><a href="/">ESP32MHVAC</a></h2>
-                <p>Mitsubishi AC Controller!</p>
-              </hgroup>
-            </li></ul>
-            <ul><li>
-              <details class="dropdown">
-                <summary>⚙️</summary>
-                <ul dir="rtl">
-                  <li><a href="/wifi">WiFi 🛜</a></li>
-                  <li><a href="/device">Device 📱</a></li>
-                </ul>
-              </details>
-          </li></ul>
-          </nav>
-        </header>
-        <main class="container">
-    
-          <h3>Heat Pump / AC Settings ❌</h3>
-          <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded'>
-            <fieldset>
-              <label>
-                Power
-                <select name='power' id='power'>
-                
-                </select>
-              </label>
-              <label>
-                Mode
-                <select name='mode' id='mode'>
-                
-                </select>
-              </label>
-              <label>
-                Desired temperature <output id="tempOutputId">0</output>° C
-                <input type="range" id="temperature" value="0" min="15" max="35" step="1" oninput="tempOutputId.value = temperature.value">
-              </label>
-              <label>
-                Fan
-                <select name='fan' id='fan'>
-                
-                </select>
-              </label>
-              <label>
-                Vertical vane
-                <select name='vane' id='vane'>
-                
-                </select>
-              </label> 
-              <label>
-                Horizontal vane
-                <select name='wideVane' id='wideVane'>
-                
-                </select><br>
-              </label> 
-            </fieldset>
-            <input type='submit' value='Submit'>
-          </form>
-    
-        </main>
-        <footer class="container">
-          <span>⌛<b>00:01:00</b></span>
-          <span>MQTT ✅</span>
-        </footer>
-      </body>
-    </html>
+          event.preventDefault();
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <header class="container">
+      <span>🛜 jaisor-n <b>78%</b></span>
+      <span>🌡️ Room <b>0.00°C</b></span>
+      <nav>
+        <ul><li>
+          <hgroup>
+            <h2><a href="/">ESP32MHVAC</a></h2>
+            <p>Mitsubishi AC Controller!</p>
+          </hgroup>
+        </li></ul>
+        <ul><li>
+          <details class="dropdown">
+            <summary>⚙️</summary>
+            <ul dir="rtl">
+              <li><a href="/wifi">WiFi 🛜</a></li>
+              <li><a href="/device">Device 📱</a></li>
+            </ul>
+          </details>
+      </li></ul>
+      </nav>
+    </header>
+    <main class="container">
+
+      <h3>Device Settings</h3>
+      <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' delay='5000'>
+        <fieldset>
+          <label>
+            Device name
+            <input type='text' id='deviceName' name='deviceName' value='ESP32MHVAC'>
+          </label>
+          <label>
+            Temperature units
+            <select name='tempUnit' id='tempUnit'>
+              <option selected value='0'>Celsius</option>      <option  value='1'>Fahrenheit</option>
+            </select>
+          </label>
+          <label>MQTT server
+            <input type='text' id='mqttServer' name='mqttServer' value='server.lan'>
+          </label>
+          <label>MQTT port
+            <input type='text' id='mqttPort' name='mqttPort' value='1883'>
+          </label>
+          <label>
+            MQTT topic
+            <input type='text' id='mqttTopic' name='mqttTopic' value='ac/dev32'>
+          </label>
+          <label>
+            Battery volt measurement divider
+            <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='0.00'>
+          </label>
+        </fieldset>
+        <button type='submit' value='Submit'>Submit...</button>
+      </form>
+
+    </main>
+    <footer class="container">
+      <span>⌛<b>00:00:09</b></span>
+      <span>MQTT ✅</span>
+      <small>{"connected":true,"ts":9065,"tsHPSettingsUpdated":9065,"tsHPStatusUpdated":9065,"power":"ON","mode":"COOL","temperature":23.32,"fan":"AUTO","vane":"AUTO","wideVane":"|","roomTemperature":32.23,"operating":true,"compressorFrequency":0}</small>
+    </footer>
+  </body>
+</html>

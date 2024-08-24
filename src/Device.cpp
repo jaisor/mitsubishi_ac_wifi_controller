@@ -131,6 +131,21 @@ CDevice::CDevice() {
 
   jsonHPSettings["connected"] = hpConnected;
 
+  #ifdef DEBUG_MOCK_HP
+    jsonHPSettings["tsHPSettingsUpdated"] = millis();
+    jsonHPSettings["tsHPStatusUpdated"] = millis();
+    jsonHPSettings["connected"] = true;
+    jsonHPSettings["power"] = "ON";
+    jsonHPSettings["mode"] = "COOL";
+    jsonHPSettings["temperature"] = 23.32;
+    jsonHPSettings["fan"] = "AUTO";
+    jsonHPSettings["vane"] = "AUTO";;
+    jsonHPSettings["wideVane"] = "|";
+    jsonHPSettings["roomTemperature"] = 32.23;
+    jsonHPSettings["operating"] = true;
+    jsonHPSettings["compressorFrequency"] = 0;
+  #endif
+
   /*
   hp.setSettings({ //set some default settings
     "ON",  // ON/OFF 
@@ -285,20 +300,25 @@ JsonDocument& CDevice::getACSettings() {
     jsonHPSettings["compressorFrequency"] = hpStatus.compressorFrequency;
   }
 
-  #ifdef DEBUG_MOCK_HP
-    jsonHPSettings["tsHPSettingsUpdated"] = millis();
-    jsonHPSettings["tsHPStatusUpdated"] = millis();
-    jsonHPSettings["connected"] = true;
-    jsonHPSettings["power"] = "ON";
-    jsonHPSettings["mode"] = "COOL";
-    jsonHPSettings["temperature"] = 23.32;
-    jsonHPSettings["fan"] = "AUTO";
-    jsonHPSettings["vane"] = "AUTO";;
-    jsonHPSettings["wideVane"] = "|";
-    jsonHPSettings["roomTemperature"] = 32.23;
-    jsonHPSettings["operating"] = true;
-    jsonHPSettings["compressorFrequency"] = 0;
-  #endif
-
   return jsonHPSettings;
+}
+
+void CDevice::setACSettings(JsonDocument ac) {
+  #ifdef DEBUG_MOCK_HP
+    jsonHPSettings["power"] = ac["power"];
+    jsonHPSettings["mode"] = ac["mode"];
+    jsonHPSettings["temperature"] = ac["temperature"];
+    jsonHPSettings["fan"] = ac["fan"];
+  #else
+    String power = ac["power"];
+    hp.setPowerSetting(power.c_str());
+    String mode = ac["mode"];
+    hp.setModeSetting(mode.c_str());
+    float temperature = ac["temperature"];
+    hp.setTemperature(temperature);
+    String fan = ac["fan"];
+    hp.setFanSpeed(fan.c_str());
+    //
+    hp.update();
+  #endif
 }

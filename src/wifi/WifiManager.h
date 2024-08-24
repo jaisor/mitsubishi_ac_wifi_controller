@@ -48,6 +48,7 @@ private:
   void handleWifi(AsyncWebServerRequest *request);
   void handleDevice(AsyncWebServerRequest *request);
   void handleFactoryReset(AsyncWebServerRequest *request);
+  void handleHeatPump(AsyncWebServerRequest *request);
   void handleStyleCSS(AsyncWebServerRequest *request);
   void handleRestAPI(AsyncWebServerRequest *request);
 
