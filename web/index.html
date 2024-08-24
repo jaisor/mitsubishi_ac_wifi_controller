@@ -20,11 +20,15 @@
             body: new FormData(data)
           }).then(res=>res.text())
             .then(function (data) {
-              console.log("Submit");
+              console.log("Server response: " + data);
+              console.log("Reloading page after " + d + " ms");
               setTimeout(function () {
-                console.log("Yes!" + d);
                 location.reload(true); 
               }, d);
+            })
+            .catch((e) => {
+              console.error(e);
+              location.reload(true); 
             });
           event.preventDefault();
         });

@@ -340,21 +340,32 @@ void CWifiManager::handleHeatPump(AsyncWebServerRequest *request) {
 
   ac["power"] = request->arg("power");
   ac["mode"] = request->arg("mode");
-  ac["temperature"] = atoi(request->arg("temperature").c_str());
+  
+  int tu = atoi(request->arg("temperature").c_str());
+  ac["temperature"] = roundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? tu : (((float)tu - 32.0) / 1.8));
+  
   ac["fan"] = request->arg("fan");
+  ac["vane"] = request->arg("vane");
 
   String jsonStr;
   serializeJson(ac, jsonStr);
   Log.verboseln("new hpSettings: '%s'", jsonStr.c_str());
   
+  bool success = sensorProvider->setACSettings(ac);
+  
   AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
-  response->print("OK");
-  response->setCode(200);
+  if (success) {
+    response->print("OK");
+    response->setCode(200);
+  } else {
+    response->print("ERROR");
+    response->setCode(500);
+  }
+  
   request->send(response);
 
   intLEDOff();
 }
-
 
 void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   Log.infoln("handleFactoryReset");
@@ -388,7 +399,8 @@ void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
     response->setCode(200);
     request->send(response);
   } else if (request->method() == HTTP_POST) {
-
+    // TODO
+    
   } 
 
   intLEDOff();
@@ -628,13 +640,54 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
     );
   }
 
-  // {"AUTO", "QUIET", "1", "2", "3", "4"};
   // {"AUTO", "1", "2", "3", "4", "5", "SWING"};
   // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
 
   uint8_t tu = (uint8_t)lroundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32);
   uint8_t tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 15 : 60;
   uint8_t tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 35 : 95;
+
+  char selectVane[512] = "";
+  if (ac.containsKey("vane")) {
+    snprintf_P(selectVane, 512, PSTR("\
+      <option %s value='AUTO'>AUTO</option>\
+      <option %s value='1'>1</option>\
+      <option %s value='2'>2</option>\
+      <option %s value='3'>3</option>\
+      <option %s value='4'>4</option>\
+      <option %s value='5'>5</option>\
+      <option %s value='SWING'>SWING</option>\
+      "), 
+      strcmp(ac["vane"], "AUTO") == 0 ? "selected" : "", 
+      strcmp(ac["vane"], "1") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "2") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "3") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "4") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "5") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "SWING") == 0 ? "selected" : ""
+    );
+  }
+
+  char selectWideVane[512] = "";
+  /*
+  if (ac.containsKey("vane")) {
+    snprintf_P(selectWideVane, 512, PSTR("\
+      <option %s value='1'><<</option>\
+      <option %s value='2'><</option>\
+      <option %s value='3'>|</option>\
+      <option %s value='4'>4</option>\
+      <option %s value='5'>5</option>\
+      <option %s value='SWING'>SWING</option>\
+      "), 
+      strcmp(ac["vane"], "1") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "2") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "3") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "4") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "5") == 0 ? "selected" : "",
+      strcmp(ac["vane"], "SWING") == 0 ? "selected" : ""
+    );
+  }
+  */
 
   p->printf_P(htmlHeatPump, 
     ac.containsKey("connected") && ac["connected"] ? PSTR("✅") : PSTR("❌"),
@@ -645,8 +698,8 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
     tu, configuration.tempUnit == TEMP_UNIT_CELSIUS ? "C" : "F", tu, tminu, tmaxu,
     //
     selectFan, // fan
-    "", // vane
-    "" // wideVane
+    selectVane, // vane
+    selectWideVane // wideVane
   );
 }
 

@@ -13,5 +13,5 @@ public:
   virtual uint32_t getUptime() { return CONFIG_getUpTime(); };
   virtual bool isSensorReady() { return false; };
   virtual JsonDocument& getACSettings();
-  virtual void setACSettings(JsonDocument ac);
+  virtual bool setACSettings(JsonDocument ac);
 };

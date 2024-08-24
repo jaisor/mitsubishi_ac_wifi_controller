@@ -23,11 +23,15 @@ const char htmlTop[] PROGMEM = R"=====(
             body: new FormData(data)
           }).then(res=>res.text())
             .then(function (data) {
-              console.log("Submit");
+              console.log("Server response: " + data);
               setTimeout(function () {
-                console.log("Yes!" + d);
+                console.log("Reloading page after " + d + " ms");
                 location.reload(true); 
               }, d);
+            })
+            .catch((e) => {
+              console.error(e);
+              location.reload(true); 
             });
           event.preventDefault();
         });
@@ -64,7 +68,7 @@ const char htmlBottom[] PROGMEM = R"=====(
     <footer class="container">
       <span>⌛<b>%02d:%02d:%02d</b></span>
       <span>MQTT %s</span>
-      <small>%s</small>
+      <small hidden="true">%s</small>
     </footer>
   </body>
 </html>
@@ -72,7 +76,7 @@ const char htmlBottom[] PROGMEM = R"=====(
 
 const char htmlWifi[] PROGMEM = R"=====(
       <h3>WiFi Settings</h3>
-      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' delay='5000'>
+      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' delay='10000'>
         <fieldset>
           <label>
             Access point name (SSID)
@@ -121,7 +125,7 @@ const char htmlDevice[] PROGMEM = R"=====(
 
 const char htmlHeatPump[] PROGMEM = R"=====(
       <h3>Heat Pump / AC Settings %s%s</h3>
-      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded' delay='1000'>
+      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded' delay='2000'>
         <fieldset>
           <label>
             Power
@@ -137,7 +141,7 @@ const char htmlHeatPump[] PROGMEM = R"=====(
           </label>
           <label>
             Desired temperature <output id="tempOutputId">%i</output>° %s
-            <input type="range" id="temperature" value="%i" min="%i" max="%i" step="1" oninput="tempOutputId.value = temperature.value">
+            <input type="range" id="temperature" name="temperature" value="%i" min="%i" max="%i" step="1" oninput="tempOutputId.value = temperature.value">
           </label>
           <label>
             Fan
