@@ -95,6 +95,12 @@ const char htmlDevice[] PROGMEM = R"=====(
       <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' delay='8000'>
         <fieldset>
           <label>
+            LED enabled
+            <input name='ledEnabled' id='ledEnabled' type='checkbox' role='switch' %s /><br/>
+            <sub><small>disable to reduce light noise in bedrooms</small></sub>
+          </label>
+          <br/>
+          <label>
             Device name
             <input type='text' id='deviceName' name='deviceName' value='%s'>
           </label>
@@ -113,10 +119,6 @@ const char htmlDevice[] PROGMEM = R"=====(
           <label>
             MQTT topic
             <input type='text' id='mqttTopic' name='mqttTopic' value='%s'>
-          </label>
-          <label>
-            Battery volt measurement divider
-            <input type='text' id='battVoltsDivider' name='battVoltsDivider' value='%.2f'>
           </label>
         </fieldset>
         <button type='submit' value='Submit'>Submit...</button>

@@ -109,6 +109,8 @@ struct configuration_t {
     uint8_t tempUnit;
   #endif
 
+  uint8_t ledEnabled;
+
   char _loaded[7]; // used to check if EEPROM was correctly set
 };
 

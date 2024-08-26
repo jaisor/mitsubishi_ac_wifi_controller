@@ -96,8 +96,14 @@ void CWifiManager::listen() {
   server->on("/hp", HTTP_POST, std::bind(&CWifiManager::handleHeatPump, this, std::placeholders::_1));
   //
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
-  // API
-  server->on("/api", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1));
+  // API - FIXME
+  /*
+  server->on("/api", HTTP_GET | HTTP_POST, 
+    std::bind(&CWifiManager::handleRestAPI, this, 
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5
+    )
+  );
+  */
 
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
@@ -275,6 +281,8 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
   intLEDOn();
 
   if (request->method() == HTTP_POST) {
+    configuration.ledEnabled = request->hasArg("ledEnabled");
+
     String deviceName = request->arg("deviceName");
     deviceName.toCharArray(configuration.name, sizeof(configuration.name));
     Log.infoln("Device req name: %s", deviceName);
@@ -291,12 +299,6 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
     String mqttTopic = request->arg("mqttTopic");
     mqttTopic.toCharArray(configuration.mqttTopic, sizeof(configuration.mqttTopic));
     Log.infoln("MQTT Topic: %s", mqttTopic);
-
-  #ifdef BATTERY_SENSOR
-    float battVoltsDivider = atof(request->arg("battVoltsDivider").c_str());
-    configuration.battVoltsDivider = battVoltsDivider;
-    Log.infoln("battVoltsDivider: %D", battVoltsDivider);
-  #endif
 
     uint16_t tempUnit = atoi(request->arg("tempUnit").c_str());
     configuration.tempUnit = tempUnit;
@@ -315,17 +317,11 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
       configuration.tempUnit == TEMP_UNIT_CELSIUS ? "selected" : "", 
       configuration.tempUnit == TEMP_UNIT_FAHRENHEIT ? "selected" : "");
 
-    #ifdef BATTERY_SENSOR
-      float bvd = configuration.battVoltsDivider;
-    #else
-      float bvd = 0;
-    #endif
-
     AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
     printHTMLTop(response);
-    response->printf_P(htmlDevice, configuration.name, tempUnit,
-      configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic,
-      bvd);
+    response->printf_P(htmlDevice, configuration.ledEnabled ? "checked" : "",
+      configuration.name, tempUnit,
+      configuration.mqttServer, configuration.mqttPort, configuration.mqttTopic);
     printHTMLBottom(response);
     request->send(response);
   }
@@ -346,6 +342,7 @@ void CWifiManager::handleHeatPump(AsyncWebServerRequest *request) {
   
   ac["fan"] = request->arg("fan");
   ac["vane"] = request->arg("vane");
+  ac["wideVane"] = request->arg("wideVane");
 
   String jsonStr;
   serializeJson(ac, jsonStr);
@@ -383,7 +380,7 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   intLEDOff();
 }
 
-void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
+void CWifiManager::handleRestAPI(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
   Log.infoln("handleRestAPI: %s", request->methodToString());
   intLEDOn();
   
@@ -399,10 +396,11 @@ void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
     response->setCode(200);
     request->send(response);
   } else if (request->method() == HTTP_POST) {
-    // TODO
-    
+    JsonDocument jsonDoc;
+    if (DeserializationError::Ok == deserializeJson(jsonDoc, (const char*)data)) {
+      JsonObject obj = jsonDoc.as<JsonObject>();
+    }
   } 
-
   intLEDOff();
 }
 
@@ -661,28 +659,26 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
     );
   }
 
-  // TODO: wideVane
-  // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
   char selectWideVane[512] = "";
-  /*
   if (ac.containsKey("vane")) {
     snprintf_P(selectWideVane, 512, PSTR("\
-      <option %s value='1'><<</option>\
-      <option %s value='2'><</option>\
-      <option %s value='3'>|</option>\
-      <option %s value='4'>4</option>\
-      <option %s value='5'>5</option>\
+      <option %s value='&lt;&lt;'>&lt;&lt;</option>\
+      <option %s value='&lt;'>&lt;</option>\
+      <option %s value='|'>|</option>\
+      <option %s value='&gt;'>&gt;</option>\
+      <option %s value='&gt;&gt;'>&gt;&gt;</option>\
+      <option %s value='&lt;&gt;'>&lt;&gt;</option>\
       <option %s value='SWING'>SWING</option>\
       "), 
-      strcmp(ac["vane"], "1") == 0 ? "selected" : "",
-      strcmp(ac["vane"], "2") == 0 ? "selected" : "",
-      strcmp(ac["vane"], "3") == 0 ? "selected" : "",
-      strcmp(ac["vane"], "4") == 0 ? "selected" : "",
-      strcmp(ac["vane"], "5") == 0 ? "selected" : "",
-      strcmp(ac["vane"], "SWING") == 0 ? "selected" : ""
+      strcmp(ac["wideVane"], "<<") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], "<") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], "|") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], ">") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], ">>") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], "<>") == 0 ? "selected" : "",
+      strcmp(ac["wideVane"], "SWING") == 0 ? "selected" : ""
     );
   }
-  */
 
   p->printf_P(htmlHeatPump, 
     ac.containsKey("connected") && ac["connected"] ? PSTR("✅") : PSTR("❌"),

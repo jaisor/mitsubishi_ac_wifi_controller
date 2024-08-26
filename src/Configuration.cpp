@@ -43,6 +43,7 @@ void EEPROM_loadConfig() {
     Log.infoln("Blank configuration, loading defaults");
     strcpy(configuration._loaded, "jaisor");
     strcpy(configuration.name, DEVICE_NAME);
+    configuration.ledEnabled = true;
     #ifdef WIFI
       strcpy(configuration.ntpServer, NTP_SERVER);
       configuration.gmtOffset_sec = NTP_GMT_OFFSET_SEC;
@@ -105,12 +106,14 @@ unsigned long CONFIG_getUpTime() {
 
 static bool isIntLEDOn = false;
 void intLEDOn() {
-  #if (defined(SEEED_XIAO_M0) || defined(ESP8266))
-    digitalWrite(INTERNAL_LED_PIN, LOW);
-  #else
-    digitalWrite(INTERNAL_LED_PIN, HIGH);
-  #endif
-  isIntLEDOn = true;
+  if (configuration.ledEnabled) {
+    #if (defined(SEEED_XIAO_M0) || defined(ESP8266))
+      digitalWrite(INTERNAL_LED_PIN, LOW);
+    #else
+      digitalWrite(INTERNAL_LED_PIN, HIGH);
+    #endif
+    isIntLEDOn = true;
+  }
 }
 
 void intLEDOff() {

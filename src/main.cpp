@@ -45,7 +45,7 @@ void setup() {
   EEPROM_loadConfig();
 
   Log.infoln("Configuration loaded");
-
+  
   device = new CDevice();
   wifiManager = new CWifiManager(device);
 

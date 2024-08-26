@@ -311,6 +311,8 @@ bool CDevice::setACSettings(JsonDocument ac) {
     jsonHPSettings["mode"] = ac["mode"];
     jsonHPSettings["temperature"] = ac["temperature"];
     jsonHPSettings["fan"] = ac["fan"];
+    jsonHPSettings["vane"] = ac["vane"];
+    jsonHPSettings["wideVane"] = ac["wideVane"];
     return true;
   #else
     String power = ac["power"];
@@ -323,7 +325,8 @@ bool CDevice::setACSettings(JsonDocument ac) {
     hp.setFanSpeed(fan.c_str());
     String vane = ac["vane"];
     hp.setVaneSetting(vane.c_str());
-    hp.setFanSpeed(fan.c_str());
+    String wideVane = ac["wideVane"];
+    hp.setVaneSetting(wideVane.c_str());
     //
     return hp.update();
   #endif

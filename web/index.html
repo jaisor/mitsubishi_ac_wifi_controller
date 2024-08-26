@@ -37,7 +37,7 @@
   </head>
   <body>
     <header class="container">
-      <span>🛜 jaisor-n <b>78%</b></span>
+      <span>🛜 rssid <b>78%</b></span>
       <span>🌡️ Room <b>0.00°C</b></span>
       <nav>
         <ul><li>
@@ -62,6 +62,12 @@
       <h3>Device Settings</h3>
       <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' delay='5000'>
         <fieldset>
+          <label>
+            LED enabled
+            <input name="enableLED" type="checkbox" role="switch" checked /><br/>
+            <sub><small>disable to reduce light noise in bedrooms</small></sub>
+          </label>
+          <br/>
           <label>
             Device name
             <input type='text' id='deviceName' name='deviceName' value='ESP32MHVAC'>
