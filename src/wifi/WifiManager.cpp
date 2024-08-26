@@ -626,26 +626,19 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
       <option %s value='2'>2</option>\
       <option %s value='3'>3</option>\
       <option %s value='4'>4</option>\
-      <option %s value='5'>5</option>\
-      <option %s value='SWING'>SWING</option>\
       "), 
       strcmp(ac["fan"], "AUTO") == 0 ? "selected" : "", 
       strcmp(ac["fan"], "QUIET") == 0 ? "selected" : "",
       strcmp(ac["fan"], "1") == 0 ? "selected" : "",
       strcmp(ac["fan"], "2") == 0 ? "selected" : "",
       strcmp(ac["fan"], "3") == 0 ? "selected" : "",
-      strcmp(ac["fan"], "4") == 0 ? "selected" : "",
-      strcmp(ac["fan"], "5") == 0 ? "selected" : "",
-      strcmp(ac["fan"], "SWING") == 0 ? "selected" : ""
+      strcmp(ac["fan"], "4") == 0 ? "selected" : ""
     );
   }
 
-  // {"AUTO", "1", "2", "3", "4", "5", "SWING"};
-  // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
-
   uint8_t tu = (uint8_t)lroundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? t : t * 1.8 + 32);
-  uint8_t tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 15 : 60;
-  uint8_t tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 35 : 95;
+  uint8_t tminu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 16 : 60;
+  uint8_t tmaxu = configuration.tempUnit == TEMP_UNIT_CELSIUS ? 31 : 88;
 
   char selectVane[512] = "";
   if (ac.containsKey("vane")) {
@@ -668,6 +661,8 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
     );
   }
 
+  // TODO: wideVane
+  // {"<<", "<",  "|",  ">",  ">>", "<>", "SWING"};
   char selectWideVane[512] = "";
   /*
   if (ac.containsKey("vane")) {

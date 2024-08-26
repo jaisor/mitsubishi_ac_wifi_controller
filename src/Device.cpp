@@ -286,6 +286,7 @@ JsonDocument& CDevice::getACSettings() {
 
   if (tsHPSettingsUpdated > 0) {
     jsonHPSettings["connected"] = hpSettings.connected;
+    jsonHPSettings["connected_label"] = hpSettings.connected ? "yes" : "no";
     jsonHPSettings["power"] = hpSettings.power;
     jsonHPSettings["mode"] = hpSettings.mode;
     jsonHPSettings["temperature"] = hpSettings.temperature;
@@ -297,6 +298,7 @@ JsonDocument& CDevice::getACSettings() {
   if (tsHPStatusUpdated > 0) {
     jsonHPSettings["roomTemperature"] = hpStatus.roomTemperature;
     jsonHPSettings["operating"] = hpStatus.operating;
+    jsonHPSettings["operating_label"] = hpStatus.operating ? "yes" : "no";
     jsonHPSettings["compressorFrequency"] = hpStatus.compressorFrequency;
   }
 
