@@ -7,7 +7,7 @@ const char htmlTop[] PROGMEM = R"=====(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark" />
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="style.css" />
     <title>%s</title>
     <script>
       document.addEventListener("DOMContentLoaded", function() {
@@ -45,7 +45,7 @@ const char htmlTop[] PROGMEM = R"=====(
       <nav>
         <ul><li>
           <hgroup>
-            <h2><a href="/">%s</a></h2>
+            <h2><a href=".">%s</a></h2>
             <p>Mitsubishi AC Controller!</p>
           </hgroup>
         </li></ul>
@@ -53,8 +53,8 @@ const char htmlTop[] PROGMEM = R"=====(
           <details class="dropdown">
             <summary>⚙️</summary>
             <ul dir="rtl">
-              <li><a href="/wifi">WiFi 🛜</a></li>
-              <li><a href="/device">Device 📱</a></li>
+              <li><a href="wifi">WiFi 🛜</a></li>
+              <li><a href="device">Device 📱</a></li>
             </ul>
           </details>
       </li></ul>
@@ -76,7 +76,7 @@ const char htmlBottom[] PROGMEM = R"=====(
 
 const char htmlWifi[] PROGMEM = R"=====(
       <h3>WiFi Settings</h3>
-      <form method='POST' action='/wifi' enctype='application/x-www-form-urlencoded' delay='10000'>
+      <form method='POST' action='wifi' enctype='application/x-www-form-urlencoded' delay='10000'>
         <fieldset>
           <label>
             Access point name (SSID)
@@ -92,7 +92,7 @@ const char htmlWifi[] PROGMEM = R"=====(
 
 const char htmlDevice[] PROGMEM = R"=====(
       <h3>Device Settings</h3>
-      <form method='POST' action='/device' enctype='application/x-www-form-urlencoded' delay='8000'>
+      <form method='POST' action='device' enctype='application/x-www-form-urlencoded' delay='8000'>
         <fieldset>
           <label>
             LED enabled
@@ -127,7 +127,7 @@ const char htmlDevice[] PROGMEM = R"=====(
 
 const char htmlHeatPump[] PROGMEM = R"=====(
       <h3>Heat Pump / AC Settings %s%s</h3>
-      <form method='POST' action='/hp' enctype='application/x-www-form-urlencoded' delay='2000'>
+      <form method='POST' action='hp' enctype='application/x-www-form-urlencoded' delay='2000'>
         <fieldset>
           <label>
             Power
