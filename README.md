@@ -65,8 +65,6 @@ Future updates will have to happen over OTA
 
 ## Wiring
 
-See CN105 pinout here:
-
 ![](https://cdn.geekzone.co.nz/imagessubs/ab21de6046ee77f9188128506a7b3bba.jpg)
 
 Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
@@ -82,7 +80,6 @@ Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
 ![ESP8266 pinout](https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2019/05/ESP8266-WeMos-D1-Mini-pinout-gpio-pin.png?w=715&quality=100&strip=all&ssl=1)
 
 ![pcb](assets/5.jpg)
-
 
 ## Case
 
