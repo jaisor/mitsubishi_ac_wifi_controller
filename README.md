@@ -79,8 +79,8 @@ Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
 3D printable case is available
 ![pcb back](assets/8.jpg)
 
-![case base](assets/HVACBoxBase.stl)
-![case lid](assets/HVACBoxLid.stl)
+* [case base](assets/HVACBoxBase.stl)
+* [case lid](assets/HVACBoxLid.stl)
 
 # Apache proxy setup
 
