@@ -695,9 +695,8 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
 }
 
 bool CWifiManager::ensureMQTTConnected() {
-  if (!mqtt.connected()) {
-    if (mqtt.state() != MQTT_CONNECTED 
-      && strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) { // Reconnectable
+  if (!mqtt.connected() || mqtt.state() != MQTT_CONNECTED) {
+    if (strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) { // Reconnectable
       Log.noticeln("Attempting to reconnect from MQTT state %i at '%s:%i' ...", mqtt.state(), configuration.mqttServer, configuration.mqttPort);
       if (mqtt.connect(String(CONFIG_getDeviceId()).c_str())) {
         Log.noticeln("MQTT reconnected");
@@ -708,7 +707,7 @@ bool CWifiManager::ensureMQTTConnected() {
         Log.warningln("MQTT reconnect failed, rc=%i", mqtt.state());
       }
     }
-    if (!mqtt.connected()) {
+    if (!mqtt.connected() || mqtt.state() != MQTT_CONNECTED) {
       Log.noticeln("MQTT not connected %i", mqtt.state());
       return false;
     }
