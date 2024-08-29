@@ -36,9 +36,10 @@ Access to OTA is at `/update` path at the device's IP. See Initial boot below on
 
 # Assembly
 
-Resources showing how to remove the cover from Mitsubishi HVAC units. It is a bit tricky and intimidating. There are some hidden plastic latches that have to be forced and negotiated a bit.
-Turn power to the unit and take any other appropriate precautions. As with all DIY projects, proceed at your own risk. 
+The CN105 connected is underneath the unit cover. The cover can be a bit tricky and intimidating to remove. There are some hidden plastic latches that have to be forced and negotiated a bit.
+Turn power to the unit and take any other appropriate precautions, ladder safety, etc. As with all DIY projects, proceed at your own risk. 
 
+Resources showing how to remove the cover from Mitsubishi HVAC units:
 * https://chrdavis.github.io/hacking-a-mitsubishi-heat-pump-Part-1/
 * https://youtu.be/U0aPWvbfMRA?t=454
 
