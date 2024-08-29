@@ -62,11 +62,14 @@ See CN105 pinout here:
 Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
 
 ```
-| TX  | - RX
-| RX  | - TX
+| TX  | - RXD0 / GPIO1
+| RX  | - TXD0 / GPIO3
 | 5V  | - 5V
 | GND | - GND
+| 12V | - not connected
 ```
+
+![ESP8266 pinout](https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2019/05/ESP8266-WeMos-D1-Mini-pinout-gpio-pin.png?w=715&quality=100&strip=all&ssl=1)
 
 ![pcb](assets/5.jpg)
 
