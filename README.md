@@ -75,8 +75,8 @@ Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
 | 12V | - not connected
 | GND | - GND
 | 5V  | - 5V
-| TX  | - RXD0 / GPIO1
-| RX  | - TXD0 / GPIO3
+| TX  | - RXD0 / GPIO3
+| RX  | - TXD0 / GPIO1
 ```
 
 ![ESP8266 pinout](https://i0.wp.com/randomnerdtutorials.com/wp-content/uploads/2019/05/ESP8266-WeMos-D1-Mini-pinout-gpio-pin.png?w=715&quality=100&strip=all&ssl=1)
