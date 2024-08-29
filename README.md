@@ -15,7 +15,7 @@ The device can be connected to an existing AP using the `/wifi` option
 
 ![wifi screenshot](assets/ss1.png)
 
-## Resetting
+## Resetting / erasing configuration
 
 The device will reset itself to default configuration and self-hosted AP if it unable to complete its boot sequence within 2 seconds (smooth boot) 3 times in a row.
 This can be forced by power-cycling the device several times, each time powered up for about 1 second (less than 2 second, but enough for the CPU to start). 
@@ -27,9 +27,22 @@ Access to OTA is at `/update` path at the device's IP. See Initial boot below on
 
 # Assembly
 
+Resources showing how to remove the cover from Mitsubishi HVAC units. It is a bit tricky and intimidating. There are some hidden plastic latches that have to be forced and negotiated a bit.
+Turn power to the unit and take any other appropriate precautions. As with all DIY projects, proceed at your own risk. 
+
+* https://chrdavis.github.io/hacking-a-mitsubishi-heat-pump-Part-1/
+* https://youtu.be/U0aPWvbfMRA?t=454
+
+
 ## Parts
 
-## CN105 connector
+* ESP8266 Chip ESP-12F style board - https://www.amazon.com/dp/B081PX9YFV/
+* PCB dev board - https://www.amazon.com/dp/B0778G64QZ?ref=ppx_yo2ov_dt_b_fed_asin_title
+* CN105 connector housing - https://www.digikey.com/en/products/detail/jst-sales-america-inc/PAP-05V-S/759977
+* Connector pins - https://www.digikey.com/en/products/detail/jst-sales-america-inc/SPHD-002T-P0.5/608809
+* Alternative pre-made CN105 cable - https://www.aliexpress.us/item/3256802718583041.html
+* M3 x 4mm bolts for mounting the board in the case - https://www.amazon.com/dp/B08H2HCBQM/
+* (Optional) 4 pin connectors so the unit can be disconnected without having to take the HVAC cover off again - https://www.amazon.com/gp/product/B01DUC1S14
 
 ## Removing the RX/TX resistors
 
@@ -42,11 +55,29 @@ Future updates will have to happen over OTA
 
 ## Wiring
 
+See CN105 pinout here:
+
+![](https://cdn.geekzone.co.nz/imagessubs/ab21de6046ee77f9188128506a7b3bba.jpg)
+
+Link to source - https://www.geekzone.co.nz/forums.asp?forumid=73&topicid=303958
+
+```
+| TX  | - RX
+| RX  | - TX
+| 5V  | - 5V
+| GND | - GND
+```
+
+![pcb](assets/5.jpg)
+
+
 ## Case
 
-# 
+3D printable case is available
+![pcb back](assets/8.jpg)
 
-
+![case base](assets/HVACBoxBase.stl)
+![case lid](assets/HVACBoxLid.stl)
 
 # Apache proxy setup
 
