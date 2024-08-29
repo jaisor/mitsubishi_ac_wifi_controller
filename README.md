@@ -1,5 +1,14 @@
 # Mitsubishi AC WiFi Controller with MQTT support
 
+![main screen](assets/main_screen.png)
+
+Supported features:
+* Web UI
+* WiFi with both self-hosted or joining existing access points
+* MQTT support
+* OTA firmware update using ElegantOTA at `/update`
+* 3D printed case for clean and seamless mounting
+
 Based on:
 * https://github.com/jaisor/stus-rf24-wifi-gw
 * https://github.com/SwiCago/HeatPump
