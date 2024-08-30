@@ -3,6 +3,9 @@
 #include "Configuration.h"
 
 configuration_t configuration;
+#ifdef WEB_LOGGING
+  StringPrint logStream;
+#endif
 
 uint8_t EEPROM_initAndCheckFactoryReset() {
   Log.noticeln("Configuration size: %i", sizeof(configuration_t));

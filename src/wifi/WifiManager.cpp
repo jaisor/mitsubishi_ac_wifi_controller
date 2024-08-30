@@ -89,13 +89,19 @@ void CWifiManager::listen() {
   server->on("/", std::bind(&CWifiManager::handleRoot, this, std::placeholders::_1));
   server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
   server->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){ request->send(404); });
-  server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
   //
   server->on("/wifi", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleWifi, this, std::placeholders::_1));
   server->on("/device", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleDevice, this, std::placeholders::_1));
   server->on("/hp", HTTP_POST, std::bind(&CWifiManager::handleHeatPump, this, std::placeholders::_1));
   //
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
+#ifdef WEB_LOGGING
+  server->on("/log", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+    response->println(logStream.str().c_str());
+    request->send(response);
+  });
+#endif
   // API - FIXME
   /*
   server->on("/api", HTTP_GET | HTTP_POST, 
@@ -226,7 +232,7 @@ void CWifiManager::loop() {
 }
 
 void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
-  Log.infoln("handleRoot");
+  Log.traceln("handleRoot");
   intLEDOn();
 
   AsyncResponseStream *response = request->beginResponseStream("text/html; charset=UTF-8");
@@ -239,7 +245,7 @@ void CWifiManager::handleRoot(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleWifi(AsyncWebServerRequest *request) {
-  Log.infoln("handleWifi: %s", request->methodToString());
+  Log.traceln("handleWifi: %s", request->methodToString());
   intLEDOn();
 
   if (request->method() == HTTP_POST) {
@@ -277,7 +283,7 @@ void CWifiManager::handleWifi(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
-  Log.infoln("handleDevice: %s", request->methodToString());
+  Log.traceln("handleDevice: %s", request->methodToString());
   intLEDOn();
 
   if (request->method() == HTTP_POST) {
@@ -329,7 +335,7 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleHeatPump(AsyncWebServerRequest *request) {
-  Log.infoln("handleHeatPump: %s", request->methodToString());
+  Log.traceln("handleHeatPump: %s", request->methodToString());
   intLEDOn();
 
   JsonDocument ac = sensorProvider->getACSettings();
@@ -365,7 +371,7 @@ void CWifiManager::handleHeatPump(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
-  Log.infoln("handleFactoryReset");
+  Log.traceln("handleFactoryReset");
   intLEDOn();
   
   AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
@@ -381,7 +387,7 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleRestAPI(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-  Log.infoln("handleRestAPI: %s", request->methodToString());
+  Log.traceln("handleRestAPI: %s", request->methodToString());
   intLEDOn();
   
   if (request->method() == HTTP_GET) {
@@ -405,7 +411,7 @@ void CWifiManager::handleRestAPI(AsyncWebServerRequest *request, uint8_t *data, 
 }
 
 void CWifiManager::handleStyleCSS(AsyncWebServerRequest *request) {
-  Log.infoln("handleStyleCSS");
+  Log.traceln("handleStyleCSS");
   static uint32_t dataLen = strlen_P(cssPico);
   AsyncWebServerResponse *response = request->beginChunkedResponse("text/css; charset=UTF-8", [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
     size_t len = (dataLen>maxLen)?maxLen:dataLen;
@@ -696,6 +702,8 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
 
 bool CWifiManager::ensureMQTTConnected() {
   if (!mqtt.connected() || mqtt.state() != MQTT_CONNECTED) {
+    Log.noticeln("Disconnecting MQTT...");
+    mqtt.disconnect();
     if (strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) { // Reconnectable
       Log.noticeln("Attempting to reconnect from MQTT state %i at '%s:%i' ...", mqtt.state(), configuration.mqttServer, configuration.mqttPort);
       if (mqtt.connect(String(CONFIG_getDeviceId()).c_str())) {

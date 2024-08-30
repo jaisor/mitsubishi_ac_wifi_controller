@@ -34,6 +34,11 @@ void setup() {
   Log.infoln(F("Initializing..."));
   #endif
 
+  #ifdef WEB_LOGGING
+  Log.begin(WEB_LOG_LEVEL, &logStream);
+  Log.infoln(F("Initializing..."));
+  #endif
+
   if (EEPROM_initAndCheckFactoryReset() >= 3) {
     Log.warningln("Factory reset conditions met!");
     EEPROM_wipe();  

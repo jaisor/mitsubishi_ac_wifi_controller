@@ -3,11 +3,17 @@
 #include <Arduino.h>
 #include <functional>
 #include <ArduinoLog.h>
+#include <StreamUtils.h>
 
 //#define DEBUG_MOCK_HP
 #define DISABLE_LOGGING
 #ifndef DISABLE_LOGGING
   #define LOG_LEVEL LOG_LEVEL_VERBOSE
+#endif
+
+#define WEB_LOGGING
+#ifdef WEB_LOGGING
+  #define WEB_LOG_LEVEL LOG_LEVEL_INFO
 #endif
 
 #define WIFI    // 2.4Ghz wifi access point
@@ -115,6 +121,9 @@ struct configuration_t {
 };
 
 extern configuration_t configuration;
+#ifdef WEB_LOGGING
+  extern StringPrint logStream;
+#endif
 
 uint8_t EEPROM_initAndCheckFactoryReset();
 void EEPROM_clearFactoryReset();
