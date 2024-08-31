@@ -35,7 +35,7 @@ int dBmtoPercentage(int dBm) {
 CWifiManager::CWifiManager(ISensorProvider *sensorProvider)
 :sensorProvider(sensorProvider), rebootNeeded(false), wifiRetries(0) {  
 
-  sensorJson["gw_name"] = configuration.name;
+  sensorJson["dev_name"] = configuration.name;
   #ifdef BATTERY_SENSOR
   sensorJson["battVoltsDivider"] = configuration.battVoltsDivider;
   #endif
@@ -53,7 +53,7 @@ void CWifiManager::connect() {
   tMillis = millis();
 
   uint32_t deviceId = CONFIG_getDeviceId();
-  sensorJson["gw_deviceId"] = deviceId;
+  sensorJson["device_id"] = deviceId;
   Log.infoln("Device ID: '%i'", deviceId);
 
   if (strlen(SSID)) {
@@ -95,21 +95,20 @@ void CWifiManager::listen() {
   server->on("/hp", HTTP_POST, std::bind(&CWifiManager::handleHeatPump, this, std::placeholders::_1));
   //
   server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
+  server->on("/reboot", HTTP_POST, std::bind(&CWifiManager::handleReboot, this, std::placeholders::_1));
+  server->on("/mqtt_reconnect", HTTP_POST, std::bind(&CWifiManager::handleFixMQTT, this, std::placeholders::_1));
 #ifdef WEB_LOGGING
   server->on("/log", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    Log.traceln("handleLog");
+    intLEDOn();
     AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
     response->println(logStream.str().c_str());
     request->send(response);
+    intLEDOff();
   });
 #endif
-  // API - FIXME
-  /*
-  server->on("/api", HTTP_GET | HTTP_POST, 
-    std::bind(&CWifiManager::handleRestAPI, this, 
-      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5
-    )
-  );
-  */
+  // API - TODO: Only GET works
+  server->on("/api", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1)); // , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5
 
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
@@ -176,7 +175,7 @@ void CWifiManager::loop() {
 
     mqtt.loop();
     
-    if (!isApMode() && strlen(configuration.mqttServer) && strlen(configuration.mqttTopic) && mqtt.connected()) {
+    if (!isApMode() && strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) {
       if (millis() - tMillis > POST_UPDATE_INTERVAL) {
         tMillis = millis();
         postSensorUpdate();
@@ -376,7 +375,7 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   
   AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
   response->setCode(200);
-  response->printf("OK");
+  response->print("OK");
 
   EEPROM_wipe();
   tMillis = millis();
@@ -386,7 +385,32 @@ void CWifiManager::handleFactoryReset(AsyncWebServerRequest *request) {
   intLEDOff();
 }
 
-void CWifiManager::handleRestAPI(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+void CWifiManager::handleReboot(AsyncWebServerRequest *request) {
+  Log.traceln("handleReboot");
+  intLEDOn();
+  
+  AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+  response->setCode(200);
+  response->print("OK");
+
+  tMillis = millis();
+  rebootNeeded = true;
+  
+  request->send(response);
+  intLEDOff();
+}
+
+void CWifiManager::handleFixMQTT(AsyncWebServerRequest *request) {
+  Log.traceln("handleReboot");
+  intLEDOn();
+  
+  ensureMQTTConnected();
+
+  request->redirect("/");
+  intLEDOff();
+}
+
+void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) { // , uint8_t *data, size_t len, size_t index, size_t total
   Log.traceln("handleRestAPI: %s", request->methodToString());
   intLEDOn();
   
@@ -403,9 +427,9 @@ void CWifiManager::handleRestAPI(AsyncWebServerRequest *request, uint8_t *data, 
     request->send(response);
   } else if (request->method() == HTTP_POST) {
     JsonDocument jsonDoc;
-    if (DeserializationError::Ok == deserializeJson(jsonDoc, (const char*)data)) {
-      JsonObject obj = jsonDoc.as<JsonObject>();
-    }
+    //if (DeserializationError::Ok == deserializeJson(jsonDoc, (const char*)data)) {
+    //  JsonObject obj = jsonDoc.as<JsonObject>();
+    //}
   } 
   intLEDOff();
 }
@@ -444,14 +468,14 @@ void CWifiManager::postSensorUpdate() {
   int iv;
 
   iv = dBmtoPercentage(WiFi.RSSI());
-  sensorJson["gw_wifi_percent"] = iv;
-  sensorJson["gw_wifi_rssi"] = WiFi.RSSI();
+  sensorJson["wifi_percent"] = iv;
+  sensorJson["wifi_rssi"] = WiFi.RSSI();
 
   time_t now; 
   time(&now);
   unsigned long uptimeMillis = CONFIG_getUpTime();
 
-  sensorJson["gw_uptime_millis"] = uptimeMillis;
+  sensorJson["uptime_millis"] = uptimeMillis;
   // Convert to ISO8601 for JSON
   char buf[sizeof "2011-10-08T07:07:09Z"];
   strftime(buf, sizeof buf, "%FT%TZ", gmtime(&now));
@@ -577,7 +601,7 @@ void CWifiManager::printHTMLBottom(Print *p) {
   if (mqtt.state() == MQTT_CONNECTED) {
     snprintf_P(mqttStat, 255, PSTR("✅"));
   } else {
-    snprintf_P(mqttStat, 255, PSTR("❌[%i]"), mqtt.state());
+    snprintf_P(mqttStat, 255, PSTR("<a href='mqtt_reconnect'>❌[%i]</a>"), mqtt.state());
   }
 
   JsonDocument ac = sensorProvider->getACSettings();
@@ -702,8 +726,8 @@ void CWifiManager::printHTMLHeatPump(Print *p) {
 
 bool CWifiManager::ensureMQTTConnected() {
   if (!mqtt.connected() || mqtt.state() != MQTT_CONNECTED) {
-    Log.noticeln("Disconnecting MQTT...");
-    mqtt.disconnect();
+    //Log.noticeln("Disconnecting MQTT...");
+    //mqtt.disconnect();
     if (strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) { // Reconnectable
       Log.noticeln("Attempting to reconnect from MQTT state %i at '%s:%i' ...", mqtt.state(), configuration.mqttServer, configuration.mqttPort);
       if (mqtt.connect(String(CONFIG_getDeviceId()).c_str())) {

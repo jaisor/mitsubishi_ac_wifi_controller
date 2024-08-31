@@ -11,7 +11,7 @@
   #define LOG_LEVEL LOG_LEVEL_VERBOSE
 #endif
 
-#define WEB_LOGGING
+//#define WEB_LOGGING
 #ifdef WEB_LOGGING
   #define WEB_LOG_LEVEL LOG_LEVEL_INFO
 #endif

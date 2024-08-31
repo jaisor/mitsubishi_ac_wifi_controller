@@ -48,9 +48,11 @@ private:
   void handleWifi(AsyncWebServerRequest *request);
   void handleDevice(AsyncWebServerRequest *request);
   void handleFactoryReset(AsyncWebServerRequest *request);
+  void handleReboot(AsyncWebServerRequest *request);
+  void handleFixMQTT(AsyncWebServerRequest *request);
   void handleHeatPump(AsyncWebServerRequest *request);
   void handleStyleCSS(AsyncWebServerRequest *request);
-  void handleRestAPI(AsyncWebServerRequest *request, uint8_t* data, size_t len, size_t index, size_t total);
+  void handleRestAPI(AsyncWebServerRequest *request); // , uint8_t* data, size_t len, size_t index, size_t total
 
   void printHTMLTop(Print *p);
   void printHTMLBottom(Print *p);
