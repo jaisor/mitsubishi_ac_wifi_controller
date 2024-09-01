@@ -110,9 +110,38 @@ void CWifiManager::listen() {
 #endif
   // API - TODO: Only GET works
   server->on("/api", HTTP_GET, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1));
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    //JsonObject& jsonObj = json.as<JsonObject>();
-    // ...
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api", [this](AsyncWebServerRequest *request, JsonVariant &json) {
+    JsonObject&& jsonObj = json.as<JsonObject>();
+    
+    JsonDocument ac = sensorProvider->getACSettings();
+
+    if (jsonObj.containsKey("power")) { ac["power"] = jsonObj["power"]; }
+    if (jsonObj.containsKey("mode")) { ac["mode"] = jsonObj["mode"]; }
+    
+    if (jsonObj.containsKey("temperature")) {
+      int tu = jsonObj["temperature"];
+      ac["temperature"] = roundf(configuration.tempUnit == TEMP_UNIT_CELSIUS ? tu : (((float)tu - 32.0) / 1.8));
+    }
+
+    if (jsonObj.containsKey("fan")) { ac["fan"] = jsonObj["fan"]; }
+    if (jsonObj.containsKey("vane")) { ac["vane"] = jsonObj["vane"]; }
+    if (jsonObj.containsKey("wideVane")) { ac["wideVane"] = jsonObj["wideVane"]; }
+    
+    String jsonStr;
+    serializeJson(ac, jsonStr);
+    Log.verboseln("new hpSettings: '%s'", jsonStr.c_str());
+    
+    bool success = sensorProvider->setACSettings(ac);
+    
+    AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+    if (success) {
+      response->print("OK");
+      response->setCode(200);
+    } else {
+      response->print("ERROR");
+      response->setCode(500);
+    }
+    
   });
   server->addHandler(handler);
 

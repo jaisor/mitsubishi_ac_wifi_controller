@@ -5,8 +5,8 @@
 #include <ArduinoLog.h>
 #include <StreamUtils.h>
 
-//#define DEBUG_MOCK_HP
-#define DISABLE_LOGGING
+#define DEBUG_MOCK_HP
+//#define DISABLE_LOGGING
 #ifndef DISABLE_LOGGING
   #define LOG_LEVEL LOG_LEVEL_VERBOSE
 #endif
