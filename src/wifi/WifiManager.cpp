@@ -8,6 +8,7 @@
 #include <ezTime.h>
 #include <ElegantOTA.h>
 #include <StreamUtils.h>
+#include <AsyncJson.h>
 #include "Configuration.h"
 #include "wifi/WifiManager.h"
 #include "wifi/HTMLAssets.h"
@@ -108,7 +109,13 @@ void CWifiManager::listen() {
   });
 #endif
   // API - TODO: Only GET works
-  server->on("/api", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1)); // , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5
+  server->on("/api", HTTP_GET, std::bind(&CWifiManager::handleRestAPI, this, std::placeholders::_1));
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    //JsonObject& jsonObj = json.as<JsonObject>();
+    // ...
+  });
+  server->addHandler(handler);
+
 
   server->begin();
   Log.infoln("Web server listening on %s port %i", WiFi.localIP().toString().c_str(), WEB_SERVER_PORT);
@@ -410,27 +417,21 @@ void CWifiManager::handleFixMQTT(AsyncWebServerRequest *request) {
   intLEDOff();
 }
 
-void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) { // , uint8_t *data, size_t len, size_t index, size_t total
+void CWifiManager::handleRestAPI(AsyncWebServerRequest *request) {
   Log.traceln("handleRestAPI: %s", request->methodToString());
   intLEDOn();
   
-  if (request->method() == HTTP_GET) {
-    JsonDocument ac = sensorProvider->getACSettings();
+  JsonDocument ac = sensorProvider->getACSettings();
   
-    String jsonStr;
-    serializeJson(ac, jsonStr);
-    Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+  String jsonStr;
+  serializeJson(ac, jsonStr);
+  Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
 
-    AsyncResponseStream *response = request->beginResponseStream("application/json; charset=UTF-8");
-    response->print(jsonStr);
-    response->setCode(200);
-    request->send(response);
-  } else if (request->method() == HTTP_POST) {
-    JsonDocument jsonDoc;
-    //if (DeserializationError::Ok == deserializeJson(jsonDoc, (const char*)data)) {
-    //  JsonObject obj = jsonDoc.as<JsonObject>();
-    //}
-  } 
+  AsyncResponseStream *response = request->beginResponseStream("application/json; charset=UTF-8");
+  response->print(jsonStr);
+  response->setCode(200);
+  request->send(response);
+
   intLEDOff();
 }
 
