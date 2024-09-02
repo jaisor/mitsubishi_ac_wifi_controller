@@ -52,7 +52,9 @@ private:
   void handleFixMQTT(AsyncWebServerRequest *request);
   void handleHeatPump(AsyncWebServerRequest *request);
   void handleStyleCSS(AsyncWebServerRequest *request);
+  //
   void handleRestAPI_HP(AsyncWebServerRequest *request);
+  void handleRestAPI_Device(AsyncWebServerRequest *request);
 
   void printHTMLTop(Print *p);
   void printHTMLBottom(Print *p);

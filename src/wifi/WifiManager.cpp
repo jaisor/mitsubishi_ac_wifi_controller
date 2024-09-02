@@ -419,7 +419,7 @@ void CWifiManager::handleFixMQTT(AsyncWebServerRequest *request) {
 }
 
 void CWifiManager::handleRestAPI_HP(AsyncWebServerRequest *request) {
-  Log.traceln("handleRestAPI: %s", request->methodToString());
+  Log.traceln("handleRestAPI_HP: %s", request->methodToString());
   intLEDOn();
   
   JsonDocument ac = sensorProvider->getACSettings();
@@ -427,6 +427,67 @@ void CWifiManager::handleRestAPI_HP(AsyncWebServerRequest *request) {
   String jsonStr;
   serializeJson(ac, jsonStr);
   Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
+
+  AsyncResponseStream *response = request->beginResponseStream("application/json; charset=UTF-8");
+  response->print(jsonStr);
+  response->setCode(200);
+  request->send(response);
+
+  intLEDOff();
+}
+
+void CWifiManager::handleRestAPI_Device(AsyncWebServerRequest *request) {
+  Log.traceln("handleRestAPI_Device: %s", request->methodToString());
+  intLEDOn();
+  
+  int iv;
+
+  iv = dBmtoPercentage(WiFi.RSSI());
+  sensorJson["wifi_percent"] = iv;
+  sensorJson["wifi_rssi"] = WiFi.RSSI();
+
+  time_t now; 
+  time(&now);
+  unsigned long uptimeMillis = CONFIG_getUpTime();
+
+  sensorJson["uptime_millis"] = uptimeMillis;
+  // Convert to ISO8601 for JSON
+  char buf[sizeof "2011-10-08T07:07:09Z"];
+  strftime(buf, sizeof buf, "%FT%TZ", gmtime(&now));
+  sensorJson["timestamp_iso8601"] = String(buf);
+
+  sensorJson["mqttConfigTopic"] = mqttSubcribeTopicConfig;
+
+#if defined(TEMP_SENSOR_PIN) || defined(HVAC_CTRL)
+  bool sensorReady = sensorProvider->isSensorReady();
+  float v;
+
+  if (sensorReady) {
+    bool current = false;
+    v = sensorProvider->getTemperature(&current);
+    if (configuration.tempUnit == TEMP_UNIT_FAHRENHEIT) {
+      v = v * 1.8 + 32;
+    }
+    char tunit[32];
+    snprintf(tunit, 32, (configuration.tempUnit == TEMP_UNIT_CELSIUS ? "Celsius" : (configuration.tempUnit == TEMP_UNIT_FAHRENHEIT ? "Fahrenheit" : "" )));
+    
+    if (current) {
+      sensorJson["temperature"] = v;
+      sensorJson["temperature_unit"] = tunit;
+    }
+
+    v = sensorProvider->getHumidity(&current);
+    if (current) {
+      sensorJson["humidity"] = v;
+      sensorJson["humidit_unit"] = "percent";
+    }
+  }
+#endif
+
+  
+  String jsonStr;
+  serializeJson(sensorJson, jsonStr);
+  Log.verboseln("deviceSettings: '%s'", jsonStr.c_str());
 
   AsyncResponseStream *response = request->beginResponseStream("application/json; charset=UTF-8");
   response->print(jsonStr);
@@ -484,8 +545,10 @@ void CWifiManager::postSensorUpdate() {
   sensorJson["timestamp_iso8601"] = String(buf);
 
   sensorJson["mqttConfigTopic"] = mqttSubcribeTopicConfig;
+  sensorJson["ledEnabled"] = configuration.ledEnabled;
+  sensorJson["ledEnabled_label"] = configuration.ledEnabled ? "yes" : "no";
 
-#ifdef TEMP_SENSOR_PIN
+#if defined(TEMP_SENSOR_PIN) || defined(HVAC_CTRL)
   bool sensorReady = sensorProvider->isSensorReady();
   float v;
 
