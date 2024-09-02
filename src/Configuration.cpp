@@ -41,6 +41,9 @@ void EEPROM_loadConfig() {
 
   Log.noticeln("Configuration loaded: %s", configuration._loaded);
 
+  //strcpy(configuration.wifiSsid, "");
+  //strcpy(configuration.wifiPassword, "");
+
   if (strcmp(configuration._loaded, "jaisor")) {
     // blank
     Log.infoln("Blank configuration, loading defaults");
