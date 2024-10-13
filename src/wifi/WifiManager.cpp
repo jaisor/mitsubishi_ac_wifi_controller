@@ -111,9 +111,14 @@ void CWifiManager::listen() {
   server->on("/api/hp", HTTP_GET, std::bind(&CWifiManager::handleRestAPI_HP, this, std::placeholders::_1));
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api/hp", [this](AsyncWebServerRequest *request, JsonVariant &json) {
     bool success = this->saveHP(json.as<JsonObject>());
-    AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
-    response->print(success ? "OK" : "ERROR");
-    response->setCode(success ? 200 : 500);
+    if (success) {
+      handleRestAPI_HP(request);
+    } else {
+      AsyncResponseStream *response = request->beginResponseStream("text/plain; charset=UTF-8");
+      response->print("ERROR");
+      response->setCode(500);
+      request->send(response);
+    }
   });
   server->addHandler(handler);
 
