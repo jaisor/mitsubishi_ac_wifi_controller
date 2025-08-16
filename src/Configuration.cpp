@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <version.h>
 #include "Configuration.h"
 
 configuration_t configuration;
@@ -16,22 +17,50 @@ uint8_t EEPROM_initAndCheckFactoryReset() {
   Log.noticeln("Factory reset counter: %i", resetCounter);
   Log.noticeln("EEPROM length: %i", EEPROM.length());
 
+  #if defined(ESP32)
+  portMUX_TYPE mx = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&mx);
+  #endif
+
   // Bump reset counter
   EEPROM.write(EEPROM_FACTORY_RESET, resetCounter + 1);
   EEPROM.commit();
+
+  #if defined(ESP32)
+  taskEXIT_CRITICAL(&mx);
+  #endif
 
   return resetCounter;
 }
 
 void EEPROM_clearFactoryReset() {
+  #if defined(ESP32)
+  portMUX_TYPE mx = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&mx);
+  #endif
+  
   EEPROM.write(EEPROM_FACTORY_RESET, 0);
   EEPROM.commit();
+
+  #if defined(ESP32)
+  taskEXIT_CRITICAL(&mx);
+  #endif
 }
 
 void EEPROM_saveConfig() {
+  #if defined(ESP32)
+  portMUX_TYPE mx = portMUX_INITIALIZER_UNLOCKED;
+  taskENTER_CRITICAL(&mx);
+  #endif
+  
   Log.infoln("Saving configuration to EEPROM");
   EEPROM.put(EEPROM_CONFIGURATION_START, configuration);
+  Log.verboseln("Committing EEPROM");
   EEPROM.commit();
+
+  #if defined(ESP32)
+  taskEXIT_CRITICAL(&mx);
+  #endif
 }
 
 void EEPROM_loadConfig() {
@@ -81,6 +110,7 @@ void EEPROM_loadConfig() {
 #endif
 
   Log.noticeln("Device name: %s", configuration.name);
+  Log.noticeln("Version: %s", VERSION);
 }
 
 void EEPROM_wipe() {

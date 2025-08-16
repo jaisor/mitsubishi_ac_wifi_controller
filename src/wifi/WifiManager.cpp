@@ -9,6 +9,7 @@
 #include <ElegantOTA.h>
 #include <StreamUtils.h>
 #include <AsyncJson.h>
+#include <Version.h>
 #include "Configuration.h"
 #include "wifi/WifiManager.h"
 #include "wifi/HTMLAssets.h"
@@ -679,7 +680,7 @@ void CWifiManager::printHTMLBottom(Print *p) {
   serializeJson(ac, jsonStr);
   Log.verboseln("hpSettings: '%s'", jsonStr.c_str());
 
-  p->printf_P(htmlBottom, hr, min % 60, sec % 60, mqttStat, jsonStr.c_str());
+  p->printf_P(htmlBottom, hr, min % 60, sec % 60, mqttStat, VERSION, jsonStr.c_str());
 }
 
 void CWifiManager::printHTMLHeatPump(Print *p) {
