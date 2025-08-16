@@ -101,6 +101,7 @@ Example configuration for exposing a local network device via Apache proxy. Stro
                         Require valid-user
                 </Location>
 
-                ProxyPass /ac/roomname http://192.168.x.y disablereuse=On
-                ProxyPassReverse /ac/roomname http://192.168.x.y
+                RewriteRule ^/ac/roomname$ /ac/roomname/ [R]
+                ProxyPass /ac/roomname/ http://192.168.x.y/ disablereuse=On
+                ProxyPassReverse /ac/roomname/ http://192.168.x.y/
 ```
