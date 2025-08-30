@@ -4,12 +4,12 @@
 
 #include <Arduino.h>
 #include <WiFiClient.h>
-#include <Time.h>
+#include <time.h>
 #include <ezTime.h>
 #include <ElegantOTA.h>
 #include <StreamUtils.h>
 #include <AsyncJson.h>
-#include <Version.h>
+#include <version.h>
 #include "Configuration.h"
 #include "wifi/WifiManager.h"
 #include "wifi/HTMLAssets.h"
