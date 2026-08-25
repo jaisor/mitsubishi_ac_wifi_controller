@@ -88,17 +88,17 @@ void CWifiManager::listen() {
   status = WF_LISTENING;
 
   // Web
-  server->on("/", std::bind(&CWifiManager::handleRoot, this, std::placeholders::_1));
-  server->on("/style.css", HTTP_GET, std::bind(&CWifiManager::handleStyleCSS, this, std::placeholders::_1));
+  server->on("/", [this](AsyncWebServerRequest *request) { handleRoot(request); });
+  server->on("/style.css", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStyleCSS(request); });
   server->on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){ request->send(404); });
   //
-  server->on("/wifi", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleWifi, this, std::placeholders::_1));
-  server->on("/device", HTTP_GET | HTTP_POST, std::bind(&CWifiManager::handleDevice, this, std::placeholders::_1));
-  server->on("/hp", HTTP_POST, std::bind(&CWifiManager::handleHeatPump, this, std::placeholders::_1));
+  server->on("/wifi", HTTP_GET | HTTP_POST, [this](AsyncWebServerRequest *request) { handleWifi(request); });
+  server->on("/device", HTTP_GET | HTTP_POST, [this](AsyncWebServerRequest *request) { handleDevice(request); });
+  server->on("/hp", HTTP_POST, [this](AsyncWebServerRequest *request) { handleHeatPump(request); });
   //
-  server->on("/factory_reset", HTTP_POST, std::bind(&CWifiManager::handleFactoryReset, this, std::placeholders::_1));
-  server->on("/reboot", HTTP_POST, std::bind(&CWifiManager::handleReboot, this, std::placeholders::_1));
-  server->on("/mqtt_reconnect", HTTP_POST, std::bind(&CWifiManager::handleFixMQTT, this, std::placeholders::_1));
+  server->on("/factory_reset", HTTP_POST, [this](AsyncWebServerRequest *request) { handleFactoryReset(request); });
+  server->on("/reboot", HTTP_POST, [this](AsyncWebServerRequest *request) { handleReboot(request); });
+  server->on("/mqtt_reconnect", HTTP_POST, [this](AsyncWebServerRequest *request) { handleFixMQTT(request); });
 #ifdef WEB_LOGGING
   server->on("/log", HTTP_GET, [](AsyncWebServerRequest *request){ 
     Log.traceln("handleLog");
@@ -109,7 +109,7 @@ void CWifiManager::listen() {
     intLEDOff();
   });
 #endif
-  server->on("/api/hp", HTTP_GET, std::bind(&CWifiManager::handleRestAPI_HP, this, std::placeholders::_1));
+  server->on("/api/hp", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRestAPI_HP(request); });
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api/hp", [this](AsyncWebServerRequest *request, JsonVariant &json) {
     bool success = this->saveHP(json.as<JsonObject>());
     if (success) {
