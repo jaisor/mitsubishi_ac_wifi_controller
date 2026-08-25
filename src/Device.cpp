@@ -326,7 +326,7 @@ bool CDevice::setACSettings(JsonDocument ac) {
     String vane = ac["vane"];
     hp.setVaneSetting(vane.c_str());
     String wideVane = ac["wideVane"];
-    hp.setVaneSetting(wideVane.c_str());
+    hp.setWideVaneSetting(wideVane.c_str());
     //
     return hp.update();
   #endif

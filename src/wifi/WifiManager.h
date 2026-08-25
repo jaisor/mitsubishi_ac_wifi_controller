@@ -15,6 +15,7 @@
 
 #include "BaseManager.h"
 #include "wifi/SensorProvider.h"
+#include "wifi/HomeAssistant.h"
 
 typedef enum {
   WF_CONNECTING = 0,
@@ -37,6 +38,9 @@ private:
   
   AsyncWebServer* server;
   PubSubClient mqtt;
+#ifdef HOME_ASSISTANT
+  CHomeAssistant* homeAssistant;
+#endif
 
   JsonDocument sensorJson;
   JsonDocument configJson;
@@ -68,6 +72,7 @@ private:
 
   void mqttCallback(char *topic, uint8_t *payload, unsigned int);
   bool ensureMQTTConnected();
+  bool connectMQTT();
 
 public:
 	CWifiManager(ISensorProvider *sensorProvider);

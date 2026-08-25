@@ -88,6 +88,22 @@
   #define TEMP_UNIT_FAHRENHEIT  1
 #endif
 
+#define HOME_ASSISTANT  // MQTT discovery for the Home Assistant climate component
+#ifdef HOME_ASSISTANT
+  #define HA_DISCOVERY_PREFIX "homeassistant"
+  #define HA_NODE_ID_LEN 64
+  #define HA_TOPIC_LEN 224
+  // The heat pump is native Celsius; Home Assistant converts for display.
+  #define HA_MIN_TEMP 16
+  #define HA_MAX_TEMP 31
+  #define HA_TEMP_STEP 1
+  // Floor between change driven state publishes, so a burst of heat pump
+  // callbacks can't flood the broker.
+  #define HA_STATE_MIN_INTERVAL_MS 1000
+  // How often to sample the heat pump for externally made changes
+  #define HA_CHANGE_POLL_MS 500
+#endif
+
 #define INTERNAL_LED_PIN LED_BUILTIN
 
 struct configuration_t {

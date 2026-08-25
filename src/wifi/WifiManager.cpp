@@ -45,6 +45,9 @@ CWifiManager::CWifiManager(ISensorProvider *sensorProvider)
   strcpy(SSID, configuration.wifiSsid);
   server = new AsyncWebServer(WEB_SERVER_PORT);
   mqtt.setClient(espClient);
+#ifdef HOME_ASSISTANT
+  homeAssistant = new CHomeAssistant(&mqtt, sensorProvider);
+#endif
   connect();
 }
 
@@ -149,19 +152,49 @@ void CWifiManager::listen() {
   mqtt.setCallback(std::bind( &CWifiManager::mqttCallback, this, _1,_2,_3));
 
   if (strlen(configuration.mqttServer) && strlen(configuration.mqttTopic) && !mqtt.connected()) {
-    Log.noticeln("Attempting MQTT connection to '%s:%i' ...", configuration.mqttServer, configuration.mqttPort);
-    if (mqtt.connect(String(CONFIG_getDeviceId()).c_str())) {
-      Log.noticeln("MQTT connected");
-      
-      sprintf_P(mqttSubcribeTopicConfig, "%s/%u/config", configuration.mqttTopic, CONFIG_getDeviceId());
-      bool r = mqtt.subscribe(mqttSubcribeTopicConfig);
-      Log.noticeln("Subscribed for config changes to MQTT topic '%s' success = %T", mqttSubcribeTopicConfig, r);
-
+    if (connectMQTT()) {
       postSensorUpdate();
-    } else {
-      Log.warningln("MQTT connect failed, rc=%i", mqtt.state());
     }
   }
+}
+
+// Opens the MQTT session and (re)establishes every subscription. Shared by the
+// initial connect and the reconnect path so they can't drift apart.
+bool CWifiManager::connectMQTT() {
+
+  if (!strlen(configuration.mqttServer) || !strlen(configuration.mqttTopic)) {
+    return false;
+  }
+
+  Log.noticeln("Attempting MQTT connection to '%s:%i' ...", configuration.mqttServer, configuration.mqttPort);
+
+  bool connected;
+#ifdef HOME_ASSISTANT
+  // Register a last will so Home Assistant marks the entities unavailable if
+  // this unit drops off, rather than showing a stale temperature forever.
+  homeAssistant->refreshNodeId();
+  connected = mqtt.connect(String(CONFIG_getDeviceId()).c_str(),
+                           homeAssistant->getAvailabilityTopic(), 0, true, "offline");
+#else
+  connected = mqtt.connect(String(CONFIG_getDeviceId()).c_str());
+#endif
+
+  if (!connected) {
+    Log.warningln("MQTT connect failed, rc=%i", mqtt.state());
+    return false;
+  }
+
+  Log.noticeln("MQTT connected");
+
+  sprintf_P(mqttSubcribeTopicConfig, "%s/%u/config", configuration.mqttTopic, CONFIG_getDeviceId());
+  bool r = mqtt.subscribe(mqttSubcribeTopicConfig);
+  Log.noticeln("Subscribed for config changes to MQTT topic '%s' success = %T", mqttSubcribeTopicConfig, r);
+
+#ifdef HOME_ASSISTANT
+  homeAssistant->onMQTTConnected();
+#endif
+
+  return true;
 }
 
 void CWifiManager::loop() {
@@ -188,7 +221,13 @@ void CWifiManager::loop() {
     }
 
     mqtt.loop();
-    
+
+#ifdef HOME_ASSISTANT
+    if (!isApMode()) {
+      homeAssistant->loop();
+    }
+#endif
+
     if (!isApMode() && strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) {
       if (millis() - tMillis > POST_UPDATE_INTERVAL) {
         tMillis = millis();
@@ -303,7 +342,21 @@ void CWifiManager::handleDevice(AsyncWebServerRequest *request) {
     configuration.ledEnabled = request->hasArg("ledEnabled");
 
     String deviceName = request->arg("deviceName");
+#ifdef HOME_ASSISTANT
+    // Capture the node id built from the previous name before we overwrite it
+    char staleNodeId[HA_NODE_ID_LEN];
+    strncpy(staleNodeId, homeAssistant->getNodeId(), sizeof(staleNodeId));
+    staleNodeId[sizeof(staleNodeId) - 1] = 0;
+#endif
     deviceName.toCharArray(configuration.name, sizeof(configuration.name));
+#ifdef HOME_ASSISTANT
+    // Renaming moves every discovery topic, so retract the old retained
+    // configs now, while we still know where they live. The device reboots
+    // below and republishes under the new node id on reconnect.
+    if (homeAssistant->refreshNodeId()) {
+      homeAssistant->clearDiscovery(staleNodeId);
+    }
+#endif
     Log.infoln("Device req name: %s", deviceName);
     Log.infoln("Device size %i name: %s", sizeof(configuration.name), configuration.name);
 
@@ -596,17 +649,39 @@ void CWifiManager::postSensorUpdate() {
 
   sensorJson["ac"] = sensorProvider->getACSettings();
 
-  // sensor Json
-  sprintf_P(topic, "%s/json", configuration.mqttTopic);
-  mqtt.beginPublish(topic, measureJson(sensorJson), false);
-  BufferingPrint bufferedClient(mqtt, 32);
-  serializeJson(sensorJson, bufferedClient);
-  bufferedClient.flush();
-  mqtt.endPublish();
+  // sensor Json, published to the legacy shared topic and, so several units
+  // can coexist under one prefix, to a per device topic as well
+  const uint8_t topicCount =
+#ifdef HOME_ASSISTANT
+    2;
+#else
+    1;
+#endif
 
-  String jsonStr;
-  serializeJson(sensorJson, jsonStr);
-  Log.noticeln("Sent '%s' json to MQTT topic '%s'", jsonStr.c_str(), topic);
+  for (uint8_t i = 0; i < topicCount; i++) {
+    if (i == 0) {
+      sprintf_P(topic, "%s/json", configuration.mqttTopic);
+    } else {
+#ifdef HOME_ASSISTANT
+      sprintf_P(topic, "%s/json", homeAssistant->getBaseTopic());
+#endif
+    }
+
+    if (!mqtt.beginPublish(topic, measureJson(sensorJson), false)) {
+      Log.warningln("Failed to begin sensor publish to '%s'", topic);
+      continue;
+    }
+    BufferingPrint bufferedClient(mqtt, 32);
+    serializeJson(sensorJson, bufferedClient);
+    bufferedClient.flush();
+    mqtt.endPublish();
+
+    Log.noticeln("Sent sensor json to MQTT topic '%s'", topic);
+  }
+
+#ifdef HOME_ASSISTANT
+  homeAssistant->publishState(true);
+#endif
 
   intLEDOff();
 }
@@ -627,6 +702,13 @@ void CWifiManager::mqttCallback(char *topic, uint8_t *payload, unsigned int leng
   }
 
   Log.noticeln("Received %u bytes message on MQTT topic '%s'", length, topic);
+
+#ifdef HOME_ASSISTANT
+  if (homeAssistant->handleCommand(topic, payload, length)) {
+    return;
+  }
+#endif
+
   if (!strcmp(topic, mqttSubcribeTopicConfig)) {
     deserializeJson(configJson, (const byte*)payload, length);
 
@@ -645,6 +727,18 @@ void CWifiManager::mqttCallback(char *topic, uint8_t *payload, unsigned int leng
     // Delete the config message in case it was retained
     mqtt.publish(mqttSubcribeTopicConfig, NULL, 0, true);
     Log.noticeln("Deleted config message");
+
+#ifdef HOME_ASSISTANT
+    // A rename moves the discovery topics, retract the old ones first so Home
+    // Assistant doesn't end up with a duplicate, permanently offline device.
+    char staleNodeId[HA_NODE_ID_LEN];
+    strncpy(staleNodeId, homeAssistant->getNodeId(), sizeof(staleNodeId));
+    staleNodeId[sizeof(staleNodeId) - 1] = 0;
+    if (homeAssistant->refreshNodeId()) {
+      homeAssistant->clearDiscovery(staleNodeId);
+      homeAssistant->onMQTTConnected();
+    }
+#endif
 
     EEPROM_saveConfig();
     postSensorUpdate();
@@ -801,14 +895,7 @@ bool CWifiManager::ensureMQTTConnected() {
     //mqtt.disconnect();
     if (strlen(configuration.mqttServer) && strlen(configuration.mqttTopic)) { // Reconnectable
       Log.noticeln("Attempting to reconnect from MQTT state %i at '%s:%i' ...", mqtt.state(), configuration.mqttServer, configuration.mqttPort);
-      if (mqtt.connect(String(CONFIG_getDeviceId()).c_str())) {
-        Log.noticeln("MQTT reconnected");
-        sprintf_P(mqttSubcribeTopicConfig, "%s/%u/config", configuration.mqttTopic, CONFIG_getDeviceId());
-        bool r = mqtt.subscribe(mqttSubcribeTopicConfig);
-        Log.noticeln("Subscribed for config changes to MQTT topic '%s' success = %T", mqttSubcribeTopicConfig, r);
-      } else {
-        Log.warningln("MQTT reconnect failed, rc=%i", mqtt.state());
-      }
+      connectMQTT();
     }
     if (!mqtt.connected() || mqtt.state() != MQTT_CONNECTED) {
       Log.noticeln("MQTT not connected %i", mqtt.state());
